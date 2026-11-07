@@ -52,7 +52,7 @@ Instância não, digrafo forte sem ciclo hamiltoniano. Arcos: `(0,1), (1,2), (2,
 
 ## 3. Decisões fechadas
 
-1. Linguagem: Python 3. O código entra no PDF, então cada algoritmo fica curto, comentado em português e legível em voz alta. A mesma lógica cabe em Java se a banca pedir a troca; a escolha atual favorece contagem de operações, testes e gráficos.
+1. Linguagem: C++17. O código entra no PDF, então cada algoritmo fica curto, comentado em português e legível em voz alta. A compilação é `make test`.
 2. O programa devolve o ciclo, não apenas o booleano.
 3. A origem fica fixa no vértice 0. O sentido não fica fixo.
 4. Todo método exato recusa de imediato um digrafo que não é fortemente conexo.
@@ -60,7 +60,7 @@ Instância não, digrafo forte sem ciclo hamiltoniano. Arcos: `(0,1), (1,2), (2,
 6. O teorema de Camion (torneio forte tem ciclo hamiltoniano, com construção em tempo polinomial) entra em módulo próprio, como caso especial. Ele não substitui a estratégia do caso geral.
 7. O guloso não tem garantia. Entram dois critérios, cada um com contraexemplo automático em teste.
 8. A heurística é recozimento simulado. O texto não atribui razão de aproximação a ela.
-9. A contagem de operações usa um contador do próprio algoritmo. O tempo usa `time.perf_counter`. As duas análises ficam separadas, como o edital pede.
+9. A contagem de operações usa um contador do próprio algoritmo. O tempo usa `std::chrono::steady_clock`. As duas análises ficam separadas, como o edital pede.
 10. Para `n` acima do alcance da programação dinâmica, a heurística nunca decreta inexistência. "Orçamento esgotado" e "não existe" são resultados diferentes.
 11. Os parâmetros do recozimento são congelados num piloto, antes da bateria que vai para o relatório.
 12. O PDF sai de LaTeX, com o código inserido via `listings`.
@@ -104,17 +104,18 @@ Representação comum: matriz booleana `n × n` e listas de saída. `n` de exper
 
 Assinaturas previstas:
 
-```python
-def verifica_ciclo(g: Digrafo, ciclo: list[int]) -> bool: ...
-def forca_bruta(g: Digrafo, cont: Contador) -> list[int] | None: ...
-def backtracking(g: Digrafo, cont: Contador, ordem: str = "warnsdorff") -> list[int] | None: ...
-def held_karp(g: Digrafo, cont: Contador) -> list[int] | None: ...
-def guloso(g: Digrafo, cont: Contador, criterio: str = "indice") -> list[int] | None: ...
-def recozimento(g: Digrafo, cont: Contador, rng: random.Random, params: Params) -> ResultadoHeuristica: ...
-def ciclo_em_torneio(g: Digrafo, cont: Contador) -> list[int] | None: ...
+```cpp
+bool verifica_ciclo(const Digrafo& g, const std::vector<int>& ciclo, Contador& contador);
+std::optional<std::vector<int>> forca_bruta(const Digrafo& g, Contador& contador, const Relogio& relogio = {});
+std::optional<std::vector<int>> backtracking(const Digrafo& g, Contador& contador, OrdemBusca ordem = OrdemBusca::Warnsdorff, bool usar_filtro = true, const Relogio& relogio = {});
+std::optional<std::vector<int>> held_karp(const Digrafo& g, Contador& contador, const Relogio& relogio = {});
+std::optional<std::vector<int>> guloso(const Digrafo& g, Contador& contador, CriterioGuloso criterio = CriterioGuloso::Indice);
+ResultadoHeuristica recozimento(const Digrafo& g, Contador& contador, std::mt19937& rng, const ParamsRecozimento& params = {});
+std::optional<std::vector<int>> ciclo_em_torneio(const Digrafo& g, Contador& contador);
+std::optional<std::vector<int>> ciclo_por_blocos_contiguos(const Digrafo& g, Contador& contador);
 ```
 
-`None` nos métodos exatos significa que o ciclo não existe. No recozimento, o objeto de resultado separa `ciclo_valido`, `fitness` e o motivo (`ciclo` ou `orcamento`).
+`nullopt` nos métodos exatos significa que o ciclo não existe. No recozimento, o objeto de resultado separa `ciclo_valido`, `fitness` e o motivo (`Ciclo` ou `Orcamento`). Em `ciclo_por_blocos_contiguos` e em `ciclo_em_torneio` chamado num digrafo que não é torneio, vazio não é certificado de inexistência.
 
 ### 5.1 Força bruta
 
@@ -135,7 +136,7 @@ Podas corretas:
 
 A ordem dos vizinhos muda o tamanho da árvore e preserva a resposta. O experimento compara duas ordens no mesmo código: índice crescente, e a regra de Warnsdorff adaptada (primeiro o vizinho com menos saídas ainda livres). A ordenação é detalhe de implementação do backtracking, não um algoritmo guloso.
 
-Pior caso `O(n!)`. Na prática a árvore depende da densidade. Espaço `O(n)` de pilha. O limite de recursão do Python cobre os `n` deste trabalho.
+Pior caso `O(n!)`. Na prática a árvore depende da densidade. Espaço `O(n)` de pilha. A profundidade é `n`, dentro do que a pilha do processo cobre neste trabalho.
 
 O contador registra nós expandidos e consultas de arco. O relatório mostra mediana e máximo dos nós, porque a variância entre digrafos do mesmo `n` é parte do resultado.
 
@@ -151,7 +152,7 @@ Há ciclo quando existe `v ≠ 0` com `dp[V][v]` verdadeiro e arco `(v, 0)`.
 
 Implementação por máscara de bits. Máscaras em ordem crescente: a máscara sem o bit de `v` é menor e já foi calculada. A reconstrução guarda o predecessor de cada estado, para devolver o ciclo e não só o booleano.
 
-Tempo `Θ(n² · 2ⁿ)`. Espaço `Θ(n · 2ⁿ)` com a tabela de predecessores. Em Python, o alvo confortável é `n ≤ 20`. O tempo depende de `n` e não do número de arcos, quando a matriz já está montada. Essa previsibilidade é o contraste com o backtracking na discussão dos resultados.
+Tempo `Θ(n² · 2ⁿ)`. Espaço `Θ(n · 2ⁿ)` com a tabela de predecessores. A função aceita até `n = 22` e, acima disso, recusa com erro em vez de responder que o ciclo não existe. O tempo depende de `n` e não do número de arcos, quando a matriz já está montada e o digrafo passou no filtro de conectividade. Essa previsibilidade é o contraste com o backtracking na discussão dos resultados.
 
 Referências: Held e Karp (1962); Bellman (1962).
 
@@ -196,7 +197,7 @@ Referência do método: Kirkpatrick, Gelatt e Vecchi (1983).
 
 Teorema de Camion (1959): um torneio tem ciclo hamiltoniano direcionado se e somente se é fortemente conexo.
 
-Construção, quando o torneio é forte e `n ≥ 3`: obter um ciclo de comprimento 3 e inserir os vértices restantes. Para um vértice fora do ciclo, a propriedade de torneio garante uma posição `ci → v → c{i+1}`. Tempo `O(n²)`.
+Construção, quando o torneio é forte e `n ≥ 3`: caminho hamiltoniano por inserção, fechamento de um ciclo com uma aresta de volta e inserção dos vértices que ficaram de fora. Quando um vértice de fora não encaixa sozinho, a prova de Camion separa quem aponta para o ciclo inteiro de quem recebe arco de todo o ciclo e entra com um caminho de dois vértices. A varredura direta implementada é polinomial; no recorte `n ≤ 150` o tempo é irrelevante perto dos métodos exponenciais.
 
 O módulo recusa o digrafo que não é torneio. No relatório, este algoritmo mostra a fronteira da dificuldade: a mesma pergunta, restrita a torneios fortes, cai em P. Ele não é a resposta de divisão e conquista do caso geral.
 
@@ -228,9 +229,7 @@ Contador, compartilhado por todos os algoritmos:
 
 Os três números saem em colunas próprias. O relatório não soma contagens de algoritmos diferentes num "total de instruções" único: uma transição de Held-Karp e um teste de permutação não são a mesma operação. O eixo comum de comparação entre estratégias é o tempo de parede.
 
-Tempo: `time.perf_counter`, em milissegundos, mediana de repetições quando uma execução é curta. Timeout de 30 s nos métodos exatos. Estouro de tempo entra na tabela como dado censurado, com o `n` e a família, e não é apagado.
-
-`cProfile` pode aparecer numa frase de sanidade. Ele não é a contagem oficial, porque mistura o custo do interpretador.
+Tempo: `std::chrono::steady_clock`, em milissegundos, mediana de repetições quando uma execução é curta. Timeout de 30 s nos métodos exatos. Estouro de tempo entra na tabela como dado censurado, com o `n` e a família, e não é apagado.
 
 ## 8. Experimentos
 
@@ -272,11 +271,11 @@ Gráficos que o script precisa produzir, e que a seção de resultados discute u
 
 Pontos que a discussão precisa alcançar, porque é aqui que a nota se diferencia:
 
-- Por volta de `n ≤ 7` o fatorial ainda compete com `n² 2ⁿ`. A partir daí Held-Karp cresce mais devagar. O gráfico teórico em log10 já mostra o cruzamento; a medição serve para ver se a constante da implementação em Python empurra esse cruzamento.
+- Por volta de `n ≤ 7` o fatorial ainda compete com `n² 2ⁿ`. A partir daí Held-Karp cresce mais devagar. O gráfico teórico em log10 já mostra o cruzamento; a medição serve para ver se a constante da implementação em C++ empurra esse cruzamento.
 - Held-Karp é estável: o tempo muda pouco entre famílias do mesmo `n`. O backtracking é estável em DAG com filtro e tem cauda longa em digrafo denso. Mediana e máximo contam histórias diferentes; os dois aparecem.
 - O guloso é rápido e erra nas armadilhas. Taxa alta em torneio denso não cancela o contraexemplo.
 - O recozimento recupera parte das falhas do guloso e continua sem certificado negativo.
-- A memória da PD limita `n` antes do tempo, na casa de 20 em Python. A conclusão cita esse teto com o número medido na máquina do grupo.
+- A memória da PD limita `n` antes do tempo, na casa de 20 a 22. A conclusão cita esse teto com o número medido na máquina do grupo.
 
 Referência para a família aleatória: Frieze (1988) trata ciclo hamiltoniano em digrafo aleatório; o limiar acompanha o aparecimento de grau de entrada e de saída pelo menos 1, na ordem de `(ln n) / n`. O experimento usa essa ordem como região interessante, sem tratar uma amostra finita como demonstração do teorema.
 
@@ -349,18 +348,19 @@ O código fica agrupado em `trabalho/`, uma pasta por item. O mapa para o grupo 
 
 ```text
 trabalho/
-  00-comum/                    # digrafo.py, contador.py, verifica.py
-  01-forca-bruta/              # forca_bruta.py
-  02-backtracking/             # backtracking.py
-  03-divisao-e-conquista/      # justificativa e contraexemplo dos blocos
-  04-programacao-dinamica/     # held_karp.py
-  05-guloso/                   # guloso.py
-  06-heuristica/               # recozimento.py
-  07-torneio/                  # torneio.py, Camion, só torneio
-  testes/
-  experimentos/                # gerador.py, experimentos.py
-  dados/                       # CSV gerado, não escrito à mão
+  00-comum/                    # digrafo, contador, verifica, relógio
+  01-forca-bruta/              # forca_bruta.cpp
+  02-backtracking/             # backtracking.cpp
+  03-divisao-e-conquista/      # ciclo_por_blocos_contiguos.cpp, o atalho incorreto
+  04-programacao-dinamica/     # held_karp.cpp
+  05-guloso/                   # guloso.cpp
+  06-heuristica/               # recozimento.cpp
+  07-torneio/                  # torneio.cpp, Camion, só torneio
+  testes/                      # testar.cpp
+  experimentos/                # gerador.cpp, experimentos.cpp
+  dados/                       # CSV gerado
   graficos/
+Makefile
 docs/
   PLANO.md
   relatorio/                   # LaTeX, quando a redação começar

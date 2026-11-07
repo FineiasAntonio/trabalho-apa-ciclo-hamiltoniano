@@ -1,24 +1,30 @@
 # Ciclo Hamiltoniano Direcionado
 
-Plano do trabalho final de Análise e Projeto de Algoritmos (APA). O tema é o problema 21 do edital: dado um digrafo, decidir se existe um ciclo direcionado que visita cada vértice exatamente uma vez e volta ao início.
+Trabalho final de Análise e Projeto de Algoritmos (APA). O tema é o problema 21 do edital: dado um digrafo, decidir se existe um ciclo direcionado que visita cada vértice exatamente uma vez e volta ao início.
 
-O documento de trabalho do grupo está em [docs/PLANO.md](docs/PLANO.md). Ele fixa a definição formal, a prova de pertencimento a NP, o papel de cada estratégia, o protocolo de experimentos e a divisão entre quatro integrantes.
+O plano está em [docs/PLANO.md](docs/PLANO.md). Os códigos em C++17 ficam em [trabalho/](trabalho/LEIA-ME.md), uma pasta por estratégia.
 
-Os códigos ficam agrupados em [trabalho/](trabalho/LEIA-ME.md), uma pasta por item. A ordem de implementação está na seção 16 do plano.
+## Como rodar
 
-## Como este repositório vai rodar
-
-Quando o código entrar, a execução local prevista é:
+É preciso o `g++` com C++17.
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m pytest trabalho/testes
-python trabalho/experimentos/experimentos.py
+make test
+make experimentos
 ```
 
-Linguagem escolhida: Python 3. Os gráficos e o CSV saem de `trabalho/experimentos/`. O PDF do relatório será gerado a partir de LaTeX em `docs/relatorio/`.
+`make test` confere a concordância dos métodos exatos, as armadilhas do guloso, o falso negativo dos blocos contíguos, o recozimento e o teorema de Camion.
+
+`make experimentos` grava a bateria curta em `trabalho/dados/resultados.csv` e a mediana em `trabalho/dados/resumo.csv`. Nessa bateria o recozimento usa orçamento reduzido, para a execução terminar na hora. A bateria do relatório, com os parâmetros congelados no código (`T0 = 1`, `alfa = 0,995`, `200·n` movimentos e 10 recomeços) e com a grade maior, é:
+
+```bash
+make all
+./trabalho/experimentos/experimentos --completo \
+  --saida trabalho/dados/resultados.csv \
+  --resumo trabalho/dados/resumo.csv
+```
+
+Cada chamada exata para aos 30 segundos e a linha sai com status `censurado`. `inexistente` fica reservado aos métodos exatos. O guloso que empaca grava `nao_encontrou`. O recozimento que gasta o orçamento grava `orcamento`.
 
 ## Entrega exigida pelo edital
 
