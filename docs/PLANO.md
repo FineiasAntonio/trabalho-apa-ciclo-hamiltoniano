@@ -345,28 +345,25 @@ O ensaio usa cronômetro. O notebook da apresentação abre os gráficos já ger
 
 ## 13. Árvore prevista
 
+O código fica agrupado em `trabalho/`, uma pasta por item. O mapa para o grupo está em `trabalho/LEIA-ME.md`.
+
 ```text
-chd/
-  digrafo.py          # matriz, listas de saída, conectividade forte
-  contador.py
-  verifica.py
-  forca_bruta.py
-  backtracking.py
-  held_karp.py
-  guloso.py
-  recozimento.py
-  torneio.py          # Camion, só torneio
-  gerador.py
-  experimentos.py
-testes/
-  test_concordancia.py
-  test_armadilhas.py
-  test_torneio.py
+trabalho/
+  00-comum/                    # digrafo.py, contador.py, verifica.py
+  01-forca-bruta/              # forca_bruta.py
+  02-backtracking/             # backtracking.py
+  03-divisao-e-conquista/      # justificativa e contraexemplo dos blocos
+  04-programacao-dinamica/     # held_karp.py
+  05-guloso/                   # guloso.py
+  06-heuristica/               # recozimento.py
+  07-torneio/                  # torneio.py, Camion, só torneio
+  testes/
+  experimentos/                # gerador.py, experimentos.py
+  dados/                       # CSV gerado, não escrito à mão
+  graficos/
 docs/
   PLANO.md
-  relatorio/          # LaTeX, quando a redação começar
-dados/                # CSV gerado, não escrito à mão
-graficos/
+  relatorio/                   # LaTeX, quando a redação começar
 ```
 
 Cada arquivo de algoritmo permanece pequeno o bastante para entrar no PDF sem corte opaco. Nomes de função em português, sem acento, para o código e o texto usarem as mesmas palavras.
