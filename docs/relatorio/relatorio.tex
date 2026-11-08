@@ -125,7 +125,7 @@ Em cada aplicação abaixo, o que é vértice, o que é arco e por que a volta a
 
 Um problema está em NP quando, se alguém propõe uma resposta ``sim'', dá para conferi-la rapidamente, em tempo polinomial \cite{cormen2009,ziviani2006}. Não é preciso saber \emph{achar} a resposta, só \emph{conferir}.
 
-No CHD, a resposta ``sim'' proposta é uma sequência de vértices, $c=(c_1,\dots,c_n)$. Para conferir se ela é um ciclo hamiltoniano direcionado (função \texttt{verifica\_ciclo}, Listagem~\ref{lst:verifica.cpp}), basta checar três coisas:
+No CHD, a resposta ``sim'' proposta é uma sequência de vértices, $c=(c_1,\dots,c_n)$. Para conferir se ela é um ciclo hamiltoniano direcionado (função \texttt{verifica\_ciclo}), basta checar três coisas:
 
 \begin{enumerate}
   \item A sequência tem exatamente $n$ vértices.
@@ -151,37 +151,51 @@ Logo, quem soubesse resolver o CHD saberia resolver o ciclo hamiltoniano sem dir
 
 \section{Implementação}
 
-\subsection{Base comum}
+\subsection{Estrutura comum das implementações}
 
+Cada estratégia é um programa independente, com a sua própria função \texttt{main}. Todos usam as mesmas peças, descritas abaixo, para que as comparações sejam justas: o digrafo, o contador e o verificador são iguais para todos.
+
+\paragraph{Organização dos arquivos.} Há uma pasta para a parte comum e uma para cada estratégia. Cada pasta de estratégia tem o arquivo com o algoritmo (por exemplo, \texttt{forca\_bruta.cpp}) e o seu \texttt{main.cpp}, que apenas prepara o digrafo, chama o algoritmo e mostra o resultado. O comando \texttt{make} compila todos os programas.
+
+\paragraph{O digrafo.} É guardado como uma tabela $n\times n$, em que a posição $(u,v)$ indica se existe o arco de $u$ para $v$. Assim, perguntar se um arco existe custa um passo, o que importa porque todos os algoritmos fazem essa pergunta muitas vezes. A tabela ocupa $n^2$ posições. Não existem laços (arcos de um vértice para ele mesmo): se alguém tenta adicionar um, ele é ignorado. A tabela distingue os sentidos, então a existência de $u\to v$ não implica a de $v\to u$.
+
+\paragraph{O contador de operações.} Para a análise por contagem de instruções, o digrafo conta toda consulta de arco que recebe, e cada algoritmo conta também a sua unidade de trabalho principal. São três contadores:
 \begin{itemize}
-  \item \texttt{Digrafo}: matriz de adjacência (consulta de arco em $O(1)$) e listas de saída e de entrada ordenadas (Listagem~\ref{lst:digrafo.hpp}, \ref{lst:digrafo.cpp}). A conectividade forte usa o algoritmo de Kosaraju, em $O(n^2)$ com listas de adjacência de tamanho $O(n^2)$.
-  \item \texttt{Contador}: contagem de instruções, separada do tempo de parede. Três campos: \texttt{consultas\_aresta} (leituras na matriz), \texttt{escritas} (extensão do caminho ou preenchimento de um estado da PD) e \texttt{nos} (nós da árvore, estados da PD ou movimentos da heurística, conforme o algoritmo). Os três não são somados entre estratégias: uma transição de Held-Karp e um teste de permutação não são a mesma operação.
-  \item \texttt{Relogio}: tempo de parede com \texttt{std::chrono::steady\_clock}. O estouro do prazo (30~s) lança \texttt{TempoEsgotado} e é registrado como dado censurado, nunca como ``o ciclo não existe''.
-  \item \texttt{verifica\_ciclo}: o verificador da prova.
-  \item \texttt{executa}: cada estratégia tem o seu próprio programa (um \texttt{main.cpp} na pasta da estratégia). Todos usam esta função para ler o tipo e o tamanho $n$ da linha de comando, gerar o digrafo, medir o tempo, conferir o ciclo com \texttt{verifica\_ciclo} e imprimir uma linha com o resultado, os três contadores e o tempo.
+  \item \texttt{consultas\_arco}: quantas vezes se perguntou se um arco existe. Todos os algoritmos usam.
+  \item \texttt{permutacoes}: quantas ordens de vértices foram testadas. Só a força bruta usa.
+  \item \texttt{nos}: a unidade de trabalho dos demais algoritmos, que muda de um para outro: chamadas da busca no backtracking, estados expandidos no Held-Karp, escolhas no guloso e movimentos no recozimento.
 \end{itemize}
+Os números de algoritmos diferentes não são somados em um total único, porque um estado do Held-Karp e uma permutação da força bruta não são a mesma operação.
 
-\codigo{contador.hpp}{contador.hpp}{00-comum/contador.hpp}
-\codigo{tempo.hpp}{tempo.hpp}{00-comum/tempo.hpp}
-\codigo{digrafo.hpp}{digrafo.hpp}{00-comum/digrafo.hpp}
-\codigo{digrafo.cpp}{digrafo.cpp}{00-comum/digrafo.cpp}
-\codigo{verifica.cpp}{verifica.cpp}{00-comum/verifica.cpp}
-\codigo{execucao.hpp}{execucao.hpp}{00-comum/execucao.hpp}
-\codigo{execucao.cpp}{execucao.cpp}{00-comum/execucao.cpp}
+\paragraph{O verificador.} A função \texttt{verifica\_ciclo} recebe um digrafo e uma sequência de vértices e responde se ela é um ciclo hamiltoniano direcionado: confere se tem $n$ vértices, se nenhum se repete e se cada vértice tem arco para o seguinte, inclusive do último para o primeiro. É o verificador da prova de NP da seção anterior. Todos os programas o usam para conferir o ciclo que o algoritmo devolveu, antes de mostrá-lo.
+
+\paragraph{O gerador de digrafos.} Cria os digrafos de teste a partir de um tipo e do tamanho $n$:
+\begin{center}
+\small
+\begin{tabular}{p{4.7cm} p{8.6cm}}
+\toprule
+Tipo & O que gera\\
+\midrule
+\texttt{ciclo\_simples} & Só o ciclo $0\to1\to\cdots\to(n-1)\to0$. Tem ciclo hamiltoniano, e é o único.\\
+\texttt{forte\_sem\_ciclo} & O exemplo fixo de 4 vértices da introdução: fortemente conexo e sem ciclo hamiltoniano. Ignora o $n$.\\
+\texttt{pior\_caso} & Um digrafo completo sobre $n-1$ vértices, mais um vértice ligado só ao vértice 1. Não tem ciclo, e obriga os métodos exatos a esgotar a busca.\\
+\texttt{aleatorio} & Cada arco existe com probabilidade $0{,}35$. Pode ter ou não ter ciclo, e a chance de ter cresce com $n$.\\
+\texttt{armadilha\_indice} & Digrafo de 4 vértices em que o guloso por índice falha, embora exista ciclo.\\
+\texttt{armadilha\_warnsdorff} & Digrafo de 4 vértices em que o guloso de Warnsdorff falha, embora exista ciclo.\\
+\bottomrule
+\end{tabular}
+\end{center}
+O tipo \texttt{aleatorio} usa uma semente. Sem indicação, ela é sorteada a cada execução, e o programa imprime a semente usada. Com a opção \texttt{-{}-semente=N} o mesmo digrafo é gerado de novo, o que permite rodar dois algoritmos no mesmo digrafo e comparar as respostas.
+
+\paragraph{O programa de cada estratégia.} Todos funcionam do mesmo jeito: recebem o tipo e o tamanho $n$ pela linha de comando, geram o digrafo, rodam o algoritmo e imprimem o ciclo (ou a informação de que não foi encontrado), os contadores, o tempo e a semente do digrafo. O tempo é medido com \texttt{std::chrono::steady\_clock} e cobre só a execução do algoritmo, sem a geração do digrafo.
 
 \subsection{Força bruta}
 
 Fixa o vértice $0$ na origem e gera as $(n-1)!$ permutações dos demais com \texttt{std::next\_permutation}. Para cada permutação consulta os $n$ arcos do ciclo e para na primeira que fecha. Não há poda: poda é o que distingue o backtracking na comparação.
 
-\codigo{forca\_bruta.cpp}{forca_bruta.cpp}{01-forca-bruta/forca_bruta.cpp}
-\codigo{01-forca-bruta/main.cpp}{main_01-forca-bruta}{01-forca-bruta/main.cpp}
-
 \subsection{Backtracking}
 
 Busca em profundidade a partir de $0$. O próximo vértice é um vizinho de saída ainda fora do caminho; com $n$ vértices no caminho, o único teste é o arco de volta a $0$. Duas ordens de vizinhos (mesma resposta, árvores de tamanhos diferentes): índice crescente e a regra de Warnsdorff adaptada (primeiro o vizinho com menos saídas livres, ideia herdada do passeio do cavalo, sem herdar uma prova). A ordenação é detalhe do backtracking, não um algoritmo guloso. O parâmetro \texttt{usar\_filtro} permite a ablação da poda por conectividade forte.
-
-\codigo{backtracking.cpp}{backtracking.cpp}{02-backtracking/backtracking.cpp}
-\codigo{02-backtracking/main.cpp}{main_02-backtracking}{02-backtracking/main.cpp}
 
 \subsection{Divisão e conquista: por que não há algoritmo}
 \label{sec:dc}
@@ -192,21 +206,15 @@ O atalho que \emph{parece} divisão (permutar um bloco $L$, permutar o outro blo
 
 \figura{blocos}{0.42\linewidth}{O ciclo $0\to1\to3\to2\to0$ intercala os blocos $L=\{1,2\}$ (azul) e $R=\{3\}$ (laranja), e nenhuma concatenação de blocos o produz.}
 
-Por isso o grupo \textbf{não apresenta} esse atalho como solução. A Listagem~\ref{lst:ciclo_por_blocos.cpp} existe apenas para demonstrar o falso negativo (o programa \texttt{ciclo\_por\_blocos}, com o tipo \texttt{ciclo\_intercalado}, o exibe) e fica limitada a $n\le 10$.
+Por isso o grupo \textbf{não apresenta} esse atalho como solução. Ele existiu apenas para demonstrar o falso negativo, que o programa \texttt{ciclo\_por\_blocos} exibe com o tipo \texttt{ciclo\_intercalado}.
 
 A decomposição que funciona usa outro subproblema: ``caminho simples que começa em $0$, cobre o conjunto $S$ e termina em $v$''. Esses subproblemas se repetem ao longo da busca; resolver cada um uma vez e reutilizar é programação dinâmica, a próxima subseção. Algoritmos mais recentes (por exemplo, a inclusão-exclusão de Björklund para o caso não direcionado \cite{bjorklund2010}) ficam fora do código, e o algoritmo exato de referência do trabalho é Held-Karp.
-
-\codigo{ciclo\_por\_blocos.cpp}{ciclo_por_blocos.cpp}{03-divisao-e-conquista/ciclo_por_blocos.cpp}
-\codigo{03-divisao-e-conquista/main.cpp}{main_03-divisao-e-conquista}{03-divisao-e-conquista/main.cpp}
 
 \subsection{Programação dinâmica (Held-Karp)}
 
 Estado: $\mathrm{dp}[S][v]$ é verdadeiro quando existe caminho simples que começa em $0$, visita exatamente o conjunto $S$ e termina em $v$, com $0\in S$ e $v\in S$. Base: $\mathrm{dp}[\{0\}][0]=$ verdadeiro. Transição: $\mathrm{dp}[S][v]$ é verdadeiro quando existe $u\in S\setminus\{v\}$ com $\mathrm{dp}[S\setminus\{v\}][u]$ verdadeiro e arco $(u,v)$. Há ciclo quando existe $v\ne0$ com $\mathrm{dp}[V][v]$ verdadeiro e arco $(v,0)$ \cite{held1962,bellman1962}.
 
 Cada conjunto é uma máscara de bits, processada em ordem crescente (a máscara sem o bit de $v$ é menor e já foi calculada). Para cada máscara guarda-se um conjunto de vértices finais possíveis (um inteiro de 32 bits) e, para cada estado, o predecessor, de modo que o ciclo é reconstruído, e não só o booleano. A função aceita até $n=22$ e, acima disso, lança erro em vez de responder que o ciclo não existe.
-
-\codigo{held\_karp.cpp}{held_karp.cpp}{04-programacao-dinamica/held_karp.cpp}
-\codigo{04-programacao-dinamica/main.cpp}{main_04-programacao-dinamica}{04-programacao-dinamica/main.cpp}
 
 \subsection{Guloso}
 \label{sec:guloso}
@@ -223,9 +231,6 @@ Dois critérios, mesma estrutura: parte de $0$ e, enquanto houver vértice livre
 
 Os dois são heurísticas gulosas, sem garantia de otimalidade e sem razão de aproximação.
 
-\codigo{guloso.cpp}{guloso.cpp}{05-guloso/guloso.cpp}
-\codigo{05-guloso/main.cpp}{main_05-guloso}{05-guloso/main.cpp}
-
 \subsection{Heurística: recozimento simulado}
 
 Reformulação de otimização usada pela heurística: entre as permutações com origem $0$, maximizar o número de arcos presentes nas $n$ posições do ciclo. O \emph{fitness} vai de $0$ a $n$, e o digrafo tem ciclo exatamente quando o máximo vale $n$. Essa reformulação permite busca local; \textbf{ela não cria razão de aproximação}.
@@ -233,10 +238,6 @@ Reformulação de otimização usada pela heurística: entre as permutações co
 Movimento: retirar um vértice e inseri-lo em outra posição (relocação). A \emph{variação} do fitness depende só dos arcos da fronteira da posição antiga e da nova, e é calculada em $O(1)$. Aceita melhora sempre e aceita piora com probabilidade $e^{\Delta/T}$; esfriamento $T\leftarrow\alpha T$; vários recomeços a partir de permutações aleatórias; para ao achar fitness $n$ ou ao gastar o orçamento \cite{kirkpatrick1983}.
 
 Parâmetros declarados antes da bateria e congelados: $T_0=1$, $\alpha=0{,}995$, $200\cdot n$ movimentos por recomeço e $10$ recomeços. O resultado separa \texttt{Ciclo} (ciclo válido encontrado) de \texttt{Orcamento} (orçamento esgotado). Esgotar o orçamento \textbf{não} prova que o ciclo não existe.
-
-\codigo{recozimento.hpp}{recozimento.hpp}{06-heuristica/recozimento.hpp}
-\codigo{recozimento.cpp}{recozimento.cpp}{06-heuristica/recozimento.cpp}
-\codigo{06-heuristica/main.cpp}{main_06-heuristica}{06-heuristica/main.cpp}
 
 \subsection{Caso especial: torneios (Camion)}
 \label{sec:camion}
@@ -246,9 +247,6 @@ Um torneio com $n\ge3$ vértices tem ciclo hamiltoniano direcionado se e somente
 \end{teorema}
 
 Este módulo não é uma das seis estratégias do caso geral: mostra a fronteira da dificuldade, pois a mesma pergunta, restrita a torneios fortes, cai em P. Construção: (i) caminho hamiltoniano por inserção; (ii) um arco de volta ao início do caminho fecha um ciclo que cobre um prefixo; (iii) cada vértice de fora que encaixa entre dois consecutivos do ciclo entra ali; (iv) quando nenhum encaixa sozinho, os vértices de fora se dividem entre os que apontam para o ciclo inteiro e os que recebem arco de todo o ciclo, e um arco do segundo grupo para o primeiro permite inserir um par. O módulo recusa o digrafo que não é torneio.
-
-\codigo{torneio.cpp}{torneio.cpp}{07-torneio/torneio.cpp}
-\codigo{07-torneio/main.cpp}{main_07-torneio}{07-torneio/main.cpp}
 
 \section{Análise de complexidade}
 \label{sec:complexidade}
