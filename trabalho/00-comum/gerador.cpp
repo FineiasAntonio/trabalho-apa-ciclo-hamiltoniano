@@ -35,6 +35,27 @@ Digrafo pior_caso(int n) {
   return g;
 }
 
+Digrafo armadilha_indice() {
+  Digrafo g(4);
+  g.adiciona_arco(0, 1);
+  g.adiciona_arco(0, 2);
+  g.adiciona_arco(2, 3);
+  g.adiciona_arco(3, 1);
+  g.adiciona_arco(1, 0);
+  return g;
+}
+
+Digrafo armadilha_warnsdorff() {
+  Digrafo g(4);
+  g.adiciona_arco(0, 1);
+  g.adiciona_arco(0, 2);
+  g.adiciona_arco(1, 2);
+  g.adiciona_arco(1, 3);
+  g.adiciona_arco(2, 3);
+  g.adiciona_arco(3, 0);
+  return g;
+}
+
 Digrafo aleatorio(int n) {
   std::mt19937 rng(20261107u + static_cast<unsigned>(n));
   std::bernoulli_distribution moeda(0.35);
@@ -60,6 +81,12 @@ std::optional<Digrafo> gera(const std::string& tipo, int n) {
   }
   if (tipo == "pior_caso") {
     return pior_caso(n);
+  }
+  if (tipo == "armadilha_indice") {
+    return armadilha_indice();
+  }
+  if (tipo == "armadilha_warnsdorff") {
+    return armadilha_warnsdorff();
   }
   if (tipo == "aleatorio") {
     return aleatorio(n);

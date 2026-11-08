@@ -9,7 +9,7 @@
 int main(int argc, char** argv) {
   if (argc < 3) {
     std::cerr << "uso: " << argv[0] << " <tipo> <n>\n";
-    std::cerr << "tipos: ciclo_simples, forte_sem_ciclo, pior_caso, aleatorio\n";
+    std::cerr << "tipos: ciclo_simples, forte_sem_ciclo, pior_caso, aleatorio,\n       armadilha_indice, armadilha_warnsdorff\n";
     return 2;
   }
 
