@@ -1,6 +1,7 @@
 #include "00-comum/gerador.hpp"
 
 #include <random>
+#include <string>
 
 namespace chd {
 namespace {
@@ -56,8 +57,8 @@ Digrafo armadilha_warnsdorff() {
   return g;
 }
 
-Digrafo aleatorio(int n) {
-  std::mt19937 rng(20261107u + static_cast<unsigned>(n));
+Digrafo aleatorio(int n, unsigned semente) {
+  std::mt19937 rng(semente);
   std::bernoulli_distribution moeda(0.35);
   Digrafo g(n);
   for (int u = 0; u < n; ++u) {
@@ -72,7 +73,18 @@ Digrafo aleatorio(int n) {
 
 } 
 
-std::optional<Digrafo> gera(const std::string& tipo, int n) {
+unsigned semente_do_digrafo(int argc, char** argv) {
+  const std::string prefixo = "--semente=";
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg = argv[i];
+    if (arg.rfind(prefixo, 0) == 0) {
+      return static_cast<unsigned>(std::stoul(arg.substr(prefixo.size())));
+    }
+  }
+  return std::random_device{}();
+}
+
+std::optional<Digrafo> gera(const std::string& tipo, int n, unsigned semente) {
   if (tipo == "ciclo_simples") {
     return ciclo_simples(n);
   }
@@ -89,7 +101,7 @@ std::optional<Digrafo> gera(const std::string& tipo, int n) {
     return armadilha_warnsdorff();
   }
   if (tipo == "aleatorio") {
-    return aleatorio(n);
+    return aleatorio(n, semente);
   }
   return std::nullopt;
 }

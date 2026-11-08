@@ -8,13 +8,14 @@
 
 int main(int argc, char** argv) {
   if (argc < 3) {
-    std::cerr << "uso: " << argv[0] << " <tipo> <n> [indice|warnsdorff]\n";
+    std::cerr << "uso: " << argv[0] << " <tipo> <n> [indice|warnsdorff] [--semente=N]\n";
     std::cerr << "tipos: ciclo_simples, forte_sem_ciclo, pior_caso, aleatorio,\n";
     std::cerr << "       armadilha_indice, armadilha_warnsdorff\n";
     return 2;
   }
 
-  const auto g = chd::gera(argv[1], std::stoi(argv[2]));
+  const unsigned semente_digrafo = chd::semente_do_digrafo(argc, argv);
+  const auto g = chd::gera(argv[1], std::stoi(argv[2]), semente_digrafo);
   if (!g) {
     std::cerr << "tipo desconhecido: " << argv[1] << "\n";
     return 2;
@@ -40,5 +41,6 @@ int main(int argc, char** argv) {
   std::cout << "escolhas feitas:   " << contador.nos << "\n";
   std::cout << "consultas de arco: " << contador.consultas_arco << "\n";
   std::cout << "tempo (ms):        " << tempo_ms << "\n";
+  std::cout << "semente do digrafo: " << semente_digrafo << "\n";
   return 0;
 }

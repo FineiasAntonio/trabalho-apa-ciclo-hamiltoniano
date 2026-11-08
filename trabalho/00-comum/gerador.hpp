@@ -7,6 +7,8 @@
 
 namespace chd {
 
-std::optional<Digrafo> gera(const std::string& tipo, int n);
+unsigned semente_do_digrafo(int argc, char** argv);
+
+std::optional<Digrafo> gera(const std::string& tipo, int n, unsigned semente);
 
 }
