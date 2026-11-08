@@ -4,6 +4,7 @@ namespace chd {
 
 struct Contador {
   long long permutacoes = 0;
+  long long nos = 0;
   long long consultas_arco = 0;
 };
 

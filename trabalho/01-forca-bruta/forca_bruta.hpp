@@ -9,4 +9,4 @@ namespace chd {
 
 std::optional<std::vector<int>> forca_bruta(const Digrafo& g, Contador& contador);
 
-}  // namespace chd
+}

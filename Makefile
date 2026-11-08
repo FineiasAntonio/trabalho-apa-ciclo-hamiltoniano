@@ -5,9 +5,13 @@ COMUM := trabalho/00-comum/verifica.cpp trabalho/00-comum/gerador.cpp
 
 .PHONY: all clean
 
-all: trabalho/bin/forca_bruta
+all: trabalho/bin/forca_bruta trabalho/bin/backtracking
 
 trabalho/bin/forca_bruta: $(COMUM) trabalho/01-forca-bruta/forca_bruta.cpp trabalho/01-forca-bruta/main.cpp
+	mkdir -p trabalho/bin
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+trabalho/bin/backtracking: $(COMUM) trabalho/02-backtracking/backtracking.cpp trabalho/02-backtracking/main.cpp
 	mkdir -p trabalho/bin
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
