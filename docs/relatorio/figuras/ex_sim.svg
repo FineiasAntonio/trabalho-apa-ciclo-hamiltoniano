@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="314" height="244" viewBox="0 0 314 244">
+<defs>
+<marker id="m2e7d32" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#2e7d32"/></marker>
+<marker id="mc62828" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c62828"/></marker>
+<marker id="m757575" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#757575"/></marker>
+</defs>
+<line x1="86.0" y1="52.0" x2="238.0" y2="52.0" stroke="#2e7d32" stroke-width="2.2" marker-end="url(#m2e7d32)"/>
+<line x1="262.0" y1="76.0" x2="262.0" y2="168.0" stroke="#2e7d32" stroke-width="2.2" marker-end="url(#m2e7d32)"/>
+<line x1="238.0" y1="192.0" x2="86.0" y2="192.0" stroke="#2e7d32" stroke-width="2.2" marker-end="url(#m2e7d32)"/>
+<line x1="62.0" y1="168.0" x2="62.0" y2="76.0" stroke="#2e7d32" stroke-width="2.2" marker-end="url(#m2e7d32)"/>
+<circle cx="62" cy="52" r="22" fill="#ffffff" stroke="#333333" stroke-width="2"/><text x="62" y="52" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" dominant-baseline="central">0</text>
+<circle cx="262" cy="52" r="22" fill="#ffffff" stroke="#333333" stroke-width="2"/><text x="262" y="52" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" dominant-baseline="central">1</text>
+<circle cx="262" cy="192" r="22" fill="#ffffff" stroke="#333333" stroke-width="2"/><text x="262" y="192" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" dominant-baseline="central">2</text>
+<circle cx="62" cy="192" r="22" fill="#ffffff" stroke="#333333" stroke-width="2"/><text x="62" y="192" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" dominant-baseline="central">3</text>
+</svg>

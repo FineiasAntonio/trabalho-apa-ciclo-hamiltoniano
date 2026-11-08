@@ -1,2 +1,5 @@
-trabalho/testes/testar
-trabalho/experimentos/experimentos
+trabalho/bin/
+docs/relatorio/*.aux
+docs/relatorio/*.log
+docs/relatorio/*.toc
+docs/relatorio/*.out

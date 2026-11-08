@@ -2,9 +2,9 @@
 
 namespace chd {
 
-bool verifica_ciclo(const Digrafo& g, const std::vector<int>& ciclo, Contador& contador) {
+bool verifica_ciclo(const Digrafo& g, const std::vector<int>& ciclo) {
   const int n = g.n();
-  if (static_cast<int>(ciclo.size()) != n || n < 2) {
+  if (n < 2 || static_cast<int>(ciclo.size()) != n) {
     return false;
   }
   std::vector<char> visto(n, 0);
@@ -14,13 +14,13 @@ bool verifica_ciclo(const Digrafo& g, const std::vector<int>& ciclo, Contador& c
     }
     visto[v] = 1;
   }
+  Contador descartavel;
   for (int i = 0; i < n; ++i) {
-    int proximo = ciclo[(i + 1) % n];
-    if (!g.consulta_arco(ciclo[i], proximo, contador)) {
+    if (!g.consulta_arco(ciclo[i], ciclo[(i + 1) % n], descartavel)) {
       return false;
     }
   }
   return true;
 }
 
-}  // namespace chd
+}

@@ -1,0 +1,418 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[brazil]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\usepackage{hyperref}
+\pgfplotsset{compat=1.16}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=blue!50!black,urlcolor=blue!50!black}
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{0.3em}
+
+\lstdefinestyle{cpp}{
+  language=C++,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{blue!60!black},
+  commentstyle=\color{green!40!black}\itshape,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  breaklines=true,
+  frame=single,
+  framerule=0.3pt,
+  columns=fullflexible,
+  keepspaces=true,
+  tabsize=2,
+  extendedchars=true,
+  literate=
+    {á}{{\'a}}1 {à}{{\`a}}1 {â}{{\^a}}1 {ã}{{\~a}}1
+    {é}{{\'e}}1 {ê}{{\^e}}1
+    {í}{{\'i}}1
+    {ó}{{\'o}}1 {ô}{{\^o}}1 {õ}{{\~o}}1
+    {ú}{{\'u}}1 {ü}{{\"u}}1
+    {ç}{{\c c}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1 {Ç}{{\c C}}1
+    {ε}{{$\epsilon$}}1 {α}{{$\alpha$}}1
+}
+\lstset{style=cpp}
+
+\newcommand{\codigo}[3]{\lstinputlisting[caption={\texttt{#1}},label={lst:#2}]{../../trabalho/#3}}
+\newcommand{\figura}[3]{\begin{center}\includegraphics[width=#2]{figuras/#1.pdf}\\[0.2em]\small #3\end{center}}
+\newtheorem{teorema}{Teorema}
+\newtheorem{lema}{Lema}
+\newenvironment{demonstracao}{\par\noindent\textit{Demonstração.}\ }{\hfill$\square$\par}
+
+\input{dados.tex}
+
+\title{\textbf{Implementação e Análise de Estratégias de Algoritmos\\para Solução de Problema NP}\\[0.6em]
+\large Ciclo Hamiltoniano Direcionado}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+\section*{Autores}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Nome completo & Matrícula\\
+\midrule
+Fabio Firanzi & \textbf{[matrícula]}\\
+Finéias Antonio & \textbf{[matrícula]}\\
+Heitor Vaz & \textbf{[matrícula]}\\
+Tulio Vitorette & \textbf{[matrícula]}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\tableofcontents
+\newpage
+
+\section{Introdução}
+
+\subsection{O problema}
+
+Seja $G=(V,A)$ um grafo direcionado simples, sem laços, com $n=|V|\ge 2$ vértices. Um \emph{ciclo hamiltoniano direcionado} é uma sequência $(v_1,v_2,\dots,v_n)$ tal que
+
+\begin{itemize}
+  \item os $v_i$ são todos distintos e cobrem $V$;
+  \item $(v_i,v_{i+1})\in A$ para $i=1,\dots,n-1$;
+  \item $(v_n,v_1)\in A$.
+\end{itemize}
+
+O \textbf{problema de decisão (CHD)} pergunta: dado $G$, existe um ciclo hamiltoniano direcionado? O código deste trabalho resolve a \emph{versão de busca}: devolve a sequência quando ela existe. A resposta de decisão é o sim ou o não dessa busca, e a própria sequência é a prova de que a resposta é sim, usada na Seção~\ref{sec:prova}.
+
+\paragraph{Convenção de simetria.} Rotacionar um ciclo não cria outro ciclo. Por isso todos os métodos exatos fixam $v_1=0$. Inverter o sentido, ao contrário, produz outro ciclo direcionado e não é equivalente: o sentido oposto continua valendo e entra na busca.
+
+\subsection{Dois exemplos mínimos}
+
+\paragraph{Exemplo com ciclo.} Arcos $(0,1),(1,2),(2,3),(3,0)$. O ciclo é $0\to1\to2\to3\to0$, em verde na figura.
+
+\figura{ex_sim}{0.42\linewidth}{Digrafo com ciclo hamiltoniano direcionado.}
+
+\paragraph{Exemplo sem ciclo, com o digrafo forte.} Arcos $(0,1),(1,2),(2,0),(1,3),(3,0)$. De $3$ só se sai para $0$, e em $3$ só se entra por $1$, então $3$ teria de ocupar o trecho $1\to3\to0$. O vértice $2$ não cabe nesse trecho com os arcos existentes. O digrafo é fortemente conexo: conectividade forte é condição \emph{necessária} e não suficiente.
+
+\figura{ex_nao}{0.5\linewidth}{Digrafo fortemente conexo sem ciclo hamiltoniano.}
+
+Os dois exemplos podem ser executados por qualquer programa do trabalho, com os tipos \texttt{ciclo\_simples} e \texttt{forte\_sem\_ciclo}.
+
+\subsection{Aplicações práticas}
+\label{sec:aplicacoes}
+
+Em cada aplicação abaixo, o que é vértice, o que é arco e por que a volta ao início importa. A dificuldade é a mesma nos quatro casos: o ciclo hamiltoniano é NP-completo, e a solução exata só funciona para digrafos pequenos.
+
+\paragraph{Entregas urbanas (Correios, iFood, Amazon).} Cada endereço de entrega é um vértice, e um arco é o trecho de rua que leva de um endereço a outro. Como há ruas de mão única, ir de $A$ a $B$ não equivale a ir de $B$ a $A$, e o digrafo é naturalmente \emph{direcionado}. O entregador parte do depósito, visita cada endereço uma vez e volta ao depósito: a volta ao início é o retorno da van ou da moto à base. As empresas resolvem a versão com custos (caixeiro viajante assimétrico e roteirização de veículos), e o CHD é a pergunta de viabilidade dentro dela: o caso em que todo arco existente custa $1$ e o limite é $B=n$. Com centenas de paradas por dia, a solução exata é inviável (Seção~\ref{sec:complexidade}) e as empresas usam heurísticas, como o recozimento deste trabalho. O texto não atribui a elas razão de aproximação provada.
+
+\paragraph{Computação com DNA (Adleman, 1994).} A primeira demonstração de computação com moléculas de DNA resolveu um problema de caminho hamiltoniano num \emph{digrafo} de $7$ vértices \cite{adleman1994}. Cada cidade foi codificada por uma sequência de DNA e cada arco por uma sequência que liga o fim de uma cidade ao início da seguinte. Misturadas num tubo de ensaio, as moléculas formaram, em paralelo, todos os caminhos possíveis, e as etapas seguintes eliminaram os que não passavam por todas as cidades exatamente uma vez. O experimento é famoso por mostrar a ideia, e também por mostrar o limite: o número de moléculas necessárias cresce com o número de caminhos, isto é, de forma exponencial, e a abordagem não escala.
+
+\paragraph{Montagem de genomas (Projeto Genoma Humano e bactérias).} Para sequenciar um genoma, a máquina lê milhões de fragmentos curtos. Na formulação clássica, cada fragmento é um vértice, e um arco liga dois fragmentos quando o final de um se sobrepõe ao começo do outro. Uma sequência que usa cada fragmento uma vez é um caminho hamiltoniano; no genoma circular de uma bactéria ou de um plasmídeo é um ciclo hamiltoniano, e a volta ao início é a própria circularidade do DNA. Como o problema é NP-completo, os montadores modernos mudaram de modelo: usam o grafo de de Bruijn e o caminho euleriano, que é polinomial \cite{compeau2011}. O problema deste trabalho explica uma mudança real de abordagem numa área muito conhecida.
+
+\paragraph{Campeonato por pontos corridos (Brasileirão, xadrez).} Num campeonato em que todos jogam contra todos, os competidores são vértices e uma vitória é um arco do vencedor para o perdedor. Todo par tem exatamente um sentido (sem empate, ou desconsiderando-o), então o digrafo é um torneio. Se ele é fortemente conexo, o teorema de Camion \cite{camion1959} garante um ciclo hamiltoniano: uma ordenação circular em que cada competidor venceu o seguinte, e o último venceu o primeiro. O ciclo explica por que o ``ganhou de'' não é transitivo (A vence B, B vence C, C vence A). Este é o caso em que a pergunta deixa de ser NP-completa: a construção da Seção~\ref{sec:camion} acha o ciclo em tempo polinomial, e mostra que a dificuldade mora na estrutura do digrafo e não no nome do problema.
+
+\section{Prova: CHD pertence à classe NP}
+\label{sec:prova}
+
+\subsection{CHD $\in$ NP}
+
+Um problema está em NP quando, se alguém propõe uma resposta ``sim'', dá para conferi-la rapidamente, em tempo polinomial \cite{cormen2009,ziviani2006}. Não é preciso saber \emph{achar} a resposta, só \emph{conferir}.
+
+No CHD, a resposta ``sim'' proposta é uma sequência de vértices, $c=(c_1,\dots,c_n)$. Para conferir se ela é um ciclo hamiltoniano direcionado (função \texttt{verifica\_ciclo}, Listagem~\ref{lst:verifica.cpp}), basta checar três coisas:
+
+\begin{enumerate}
+  \item A sequência tem exatamente $n$ vértices.
+  \item Nenhum vértice se repete. Um vetor de $n$ marcas resolve em $n$ passos. Como são $n$ vértices diferentes em $n$ posições, nenhum vértice fica de fora.
+  \item Cada vértice tem arco para o próximo, e o último tem arco para o primeiro. São $n$ consultas à matriz, cada uma em tempo constante.
+\end{enumerate}
+
+Ao todo são cerca de $n$ passos, um tempo polinomial. A conferência aceita se, e somente se, $c$ é de fato um ciclo hamiltoniano direcionado de $G$. Logo, CHD está em NP.
+
+\subsection{CHD é NP-completo (além do que o edital pede)}
+
+Um problema é NP-completo quando está em NP e é pelo menos tão difícil quanto os problemas mais difíceis de NP. Para mostrar isso, usa-se um problema que já se sabe ser difícil: o ciclo hamiltoniano em grafos \emph{sem direção}, que é NP-completo \cite{karp1972,garey1979}.
+
+A ideia é transformar um problema no outro:
+
+\begin{enumerate}
+  \item Pegue um grafo sem direção e troque cada aresta entre $u$ e $v$ por dois arcos, um de $u$ para $v$ e outro de $v$ para $u$. Isso gera um digrafo.
+  \item Se o grafo tem um ciclo hamiltoniano, o digrafo tem o mesmo ciclo, pois todo caminho existe nos dois sentidos.
+  \item Se o digrafo tem um ciclo hamiltoniano, o grafo também tem, pois cada arco usado veio de uma aresta.
+\end{enumerate}
+
+Logo, quem soubesse resolver o CHD saberia resolver o ciclo hamiltoniano sem direção, que é um problema difícil. Então o CHD também é difícil e, como já está em NP, é NP-completo (problema GT38 de \cite{garey1979}).
+
+\section{Implementação}
+
+\subsection{Base comum}
+
+\begin{itemize}
+  \item \texttt{Digrafo}: matriz de adjacência (consulta de arco em $O(1)$) e listas de saída e de entrada ordenadas (Listagem~\ref{lst:digrafo.hpp}, \ref{lst:digrafo.cpp}). A conectividade forte usa o algoritmo de Kosaraju, em $O(n^2)$ com listas de adjacência de tamanho $O(n^2)$.
+  \item \texttt{Contador}: contagem de instruções, separada do tempo de parede. Três campos: \texttt{consultas\_aresta} (leituras na matriz), \texttt{escritas} (extensão do caminho ou preenchimento de um estado da PD) e \texttt{nos} (nós da árvore, estados da PD ou movimentos da heurística, conforme o algoritmo). Os três não são somados entre estratégias: uma transição de Held-Karp e um teste de permutação não são a mesma operação.
+  \item \texttt{Relogio}: tempo de parede com \texttt{std::chrono::steady\_clock}. O estouro do prazo (30~s) lança \texttt{TempoEsgotado} e é registrado como dado censurado, nunca como ``o ciclo não existe''.
+  \item \texttt{verifica\_ciclo}: o verificador da prova.
+  \item \texttt{executa}: cada estratégia tem o seu próprio programa (um \texttt{main.cpp} na pasta da estratégia). Todos usam esta função para ler o tipo e o tamanho $n$ da linha de comando, gerar o digrafo, medir o tempo, conferir o ciclo com \texttt{verifica\_ciclo} e imprimir uma linha com o resultado, os três contadores e o tempo.
+\end{itemize}
+
+\codigo{contador.hpp}{contador.hpp}{00-comum/contador.hpp}
+\codigo{tempo.hpp}{tempo.hpp}{00-comum/tempo.hpp}
+\codigo{digrafo.hpp}{digrafo.hpp}{00-comum/digrafo.hpp}
+\codigo{digrafo.cpp}{digrafo.cpp}{00-comum/digrafo.cpp}
+\codigo{verifica.cpp}{verifica.cpp}{00-comum/verifica.cpp}
+\codigo{execucao.hpp}{execucao.hpp}{00-comum/execucao.hpp}
+\codigo{execucao.cpp}{execucao.cpp}{00-comum/execucao.cpp}
+
+\subsection{Força bruta}
+
+Fixa o vértice $0$ na origem e gera as $(n-1)!$ permutações dos demais com \texttt{std::next\_permutation}. Para cada permutação consulta os $n$ arcos do ciclo e para na primeira que fecha. Não há poda: poda é o que distingue o backtracking na comparação.
+
+\codigo{forca\_bruta.cpp}{forca_bruta.cpp}{01-forca-bruta/forca_bruta.cpp}
+\codigo{01-forca-bruta/main.cpp}{main_01-forca-bruta}{01-forca-bruta/main.cpp}
+
+\subsection{Backtracking}
+
+Busca em profundidade a partir de $0$. O próximo vértice é um vizinho de saída ainda fora do caminho; com $n$ vértices no caminho, o único teste é o arco de volta a $0$. Duas ordens de vizinhos (mesma resposta, árvores de tamanhos diferentes): índice crescente e a regra de Warnsdorff adaptada (primeiro o vizinho com menos saídas livres, ideia herdada do passeio do cavalo, sem herdar uma prova). A ordenação é detalhe do backtracking, não um algoritmo guloso. O parâmetro \texttt{usar\_filtro} permite a ablação da poda por conectividade forte.
+
+\codigo{backtracking.cpp}{backtracking.cpp}{02-backtracking/backtracking.cpp}
+\codigo{02-backtracking/main.cpp}{main_02-backtracking}{02-backtracking/main.cpp}
+
+\subsection{Divisão e conquista: por que não há algoritmo}
+\label{sec:dc}
+
+Divisão e conquista, no sentido de \cite{cormen2009}, parte a entrada em subproblemas \emph{independentes}, resolve cada um e combina as respostas. No CHD a combinação não é independente: um ciclo hamiltoniano de $G$ não é a união de ciclos hamiltonianos dos subdigrafos induzidos por uma partição $V=L\cup R$, porque o ciclo pode alternar entre $L$ e $R$ várias vezes.
+
+O atalho que \emph{parece} divisão (permutar um bloco $L$, permutar o outro bloco $R$ e concatenar) responde outra pergunta. Contraexemplo, com origem $0$, $L=\{1,2\}$ e $R=\{3\}$: as concatenações possíveis são só $(0,1,2,3)$, $(0,2,1,3)$, $(0,3,1,2)$ e $(0,3,2,1)$. O digrafo de arcos $(0,1),(1,3),(3,2),(2,0)$ tem o ciclo $0\to1\to3\to2\to0$ e nenhuma das quatro sequências, então o método de blocos responde \emph{não} num digrafo que \emph{tem} ciclo.
+
+\figura{blocos}{0.42\linewidth}{O ciclo $0\to1\to3\to2\to0$ intercala os blocos $L=\{1,2\}$ (azul) e $R=\{3\}$ (laranja), e nenhuma concatenação de blocos o produz.}
+
+Por isso o grupo \textbf{não apresenta} esse atalho como solução. A Listagem~\ref{lst:ciclo_por_blocos.cpp} existe apenas para demonstrar o falso negativo (o programa \texttt{ciclo\_por\_blocos}, com o tipo \texttt{ciclo\_intercalado}, o exibe) e fica limitada a $n\le 10$.
+
+A decomposição que funciona usa outro subproblema: ``caminho simples que começa em $0$, cobre o conjunto $S$ e termina em $v$''. Esses subproblemas se repetem ao longo da busca; resolver cada um uma vez e reutilizar é programação dinâmica, a próxima subseção. Algoritmos mais recentes (por exemplo, a inclusão-exclusão de Björklund para o caso não direcionado \cite{bjorklund2010}) ficam fora do código, e o algoritmo exato de referência do trabalho é Held-Karp.
+
+\codigo{ciclo\_por\_blocos.cpp}{ciclo_por_blocos.cpp}{03-divisao-e-conquista/ciclo_por_blocos.cpp}
+\codigo{03-divisao-e-conquista/main.cpp}{main_03-divisao-e-conquista}{03-divisao-e-conquista/main.cpp}
+
+\subsection{Programação dinâmica (Held-Karp)}
+
+Estado: $\mathrm{dp}[S][v]$ é verdadeiro quando existe caminho simples que começa em $0$, visita exatamente o conjunto $S$ e termina em $v$, com $0\in S$ e $v\in S$. Base: $\mathrm{dp}[\{0\}][0]=$ verdadeiro. Transição: $\mathrm{dp}[S][v]$ é verdadeiro quando existe $u\in S\setminus\{v\}$ com $\mathrm{dp}[S\setminus\{v\}][u]$ verdadeiro e arco $(u,v)$. Há ciclo quando existe $v\ne0$ com $\mathrm{dp}[V][v]$ verdadeiro e arco $(v,0)$ \cite{held1962,bellman1962}.
+
+Cada conjunto é uma máscara de bits, processada em ordem crescente (a máscara sem o bit de $v$ é menor e já foi calculada). Para cada máscara guarda-se um conjunto de vértices finais possíveis (um inteiro de 32 bits) e, para cada estado, o predecessor, de modo que o ciclo é reconstruído, e não só o booleano. A função aceita até $n=22$ e, acima disso, lança erro em vez de responder que o ciclo não existe.
+
+\codigo{held\_karp.cpp}{held_karp.cpp}{04-programacao-dinamica/held_karp.cpp}
+\codigo{04-programacao-dinamica/main.cpp}{main_04-programacao-dinamica}{04-programacao-dinamica/main.cpp}
+
+\subsection{Guloso}
+\label{sec:guloso}
+
+Dois critérios, mesma estrutura: parte de $0$ e, enquanto houver vértice livre, escolhe um vizinho de saída livre; se empaca antes de cobrir $V$, ou se o último não aponta para $0$, devolve falha. O critério \texttt{indice} escolhe o menor índice; o critério \texttt{warnsdorff} escolhe o vizinho com menos saídas livres. \textbf{Nenhum dos dois tem garantia}, e cada um tem contraexemplo automatizado:
+
+\paragraph{Critério \texttt{indice}.} Arcos $(0,1),(0,2),(2,3),(3,1),(1,0)$. O ciclo $0\to2\to3\to1\to0$ existe (verde). O guloso sai de $0$ para $1$ (vermelho), e de $1$ só há arco para $0$, que já está no caminho: falha num digrafo que tem ciclo.
+
+\figura{guloso_indice}{0.42\linewidth}{Armadilha do critério por índice. Verde: ciclo existente. Vermelho: escolha do guloso.}
+
+\paragraph{Critério \texttt{warnsdorff}.} Arcos $(0,1),(0,2),(1,2),(1,3),(2,3),(3,0)$. O ciclo $0\to1\to2\to3\to0$ existe (verde). Saindo de $0$, o vértice $1$ tem duas saídas livres e o $2$ tem uma; a regra escolhe $2$ (vermelho), segue a $3$ e empaca com $1$ de fora.
+
+\figura{guloso_warns}{0.42\linewidth}{Armadilha do critério de Warnsdorff. Verde: ciclo existente. Vermelho: escolha do guloso. Tracejado: arco não usado.}
+
+Os dois são heurísticas gulosas, sem garantia de otimalidade e sem razão de aproximação.
+
+\codigo{guloso.cpp}{guloso.cpp}{05-guloso/guloso.cpp}
+\codigo{05-guloso/main.cpp}{main_05-guloso}{05-guloso/main.cpp}
+
+\subsection{Heurística: recozimento simulado}
+
+Reformulação de otimização usada pela heurística: entre as permutações com origem $0$, maximizar o número de arcos presentes nas $n$ posições do ciclo. O \emph{fitness} vai de $0$ a $n$, e o digrafo tem ciclo exatamente quando o máximo vale $n$. Essa reformulação permite busca local; \textbf{ela não cria razão de aproximação}.
+
+Movimento: retirar um vértice e inseri-lo em outra posição (relocação). A \emph{variação} do fitness depende só dos arcos da fronteira da posição antiga e da nova, e é calculada em $O(1)$. Aceita melhora sempre e aceita piora com probabilidade $e^{\Delta/T}$; esfriamento $T\leftarrow\alpha T$; vários recomeços a partir de permutações aleatórias; para ao achar fitness $n$ ou ao gastar o orçamento \cite{kirkpatrick1983}.
+
+Parâmetros declarados antes da bateria e congelados: $T_0=1$, $\alpha=0{,}995$, $200\cdot n$ movimentos por recomeço e $10$ recomeços. O resultado separa \texttt{Ciclo} (ciclo válido encontrado) de \texttt{Orcamento} (orçamento esgotado). Esgotar o orçamento \textbf{não} prova que o ciclo não existe.
+
+\codigo{recozimento.hpp}{recozimento.hpp}{06-heuristica/recozimento.hpp}
+\codigo{recozimento.cpp}{recozimento.cpp}{06-heuristica/recozimento.cpp}
+\codigo{06-heuristica/main.cpp}{main_06-heuristica}{06-heuristica/main.cpp}
+
+\subsection{Caso especial: torneios (Camion)}
+\label{sec:camion}
+
+\begin{teorema}[Camion, 1959 \cite{camion1959}]
+Um torneio com $n\ge3$ vértices tem ciclo hamiltoniano direcionado se e somente se é fortemente conexo.
+\end{teorema}
+
+Este módulo não é uma das seis estratégias do caso geral: mostra a fronteira da dificuldade, pois a mesma pergunta, restrita a torneios fortes, cai em P. Construção: (i) caminho hamiltoniano por inserção; (ii) um arco de volta ao início do caminho fecha um ciclo que cobre um prefixo; (iii) cada vértice de fora que encaixa entre dois consecutivos do ciclo entra ali; (iv) quando nenhum encaixa sozinho, os vértices de fora se dividem entre os que apontam para o ciclo inteiro e os que recebem arco de todo o ciclo, e um arco do segundo grupo para o primeiro permite inserir um par. O módulo recusa o digrafo que não é torneio.
+
+\codigo{torneio.cpp}{torneio.cpp}{07-torneio/torneio.cpp}
+\codigo{07-torneio/main.cpp}{main_07-torneio}{07-torneio/main.cpp}
+
+\section{Análise de complexidade}
+\label{sec:complexidade}
+
+\subsection{Tempo e espaço teóricos}
+
+Usa-se $n=|V|$ e matriz de adjacência, com consulta de arco em $O(1)$.
+
+\begin{center}
+\small
+\begin{tabular}{p{3.2cm} p{4.4cm} p{3.3cm} p{2.8cm}}
+\toprule
+Função & Tempo & Espaço extra & Garantia\\
+\midrule
+\texttt{verifica\_ciclo} & $O(n)$ & $O(n)$ & exata\\
+Força bruta & $\Theta(n\cdot(n-1)!)$ no pior caso & $O(n)$ & exata\\
+Backtracking & $O(n!)$ no pior caso; depende da densidade & $O(n)$ (pilha) & exata\\
+Held-Karp & $\Theta(n^2\,2^n)$ & $\Theta(n\,2^n)$ & exata\\
+Guloso, índice & $O(n^2\log n)$ & $O(n)$ & nenhuma\\
+Guloso, Warnsdorff & $O(n^3)$ & $O(n)$ & nenhuma\\
+Recozimento & $O(r\cdot c\,n^2)$, $r$ recomeços, $c=200$ & $O(n)$ & nenhuma\\
+Camion (só torneio) & $O(n^3)$ & $O(n)$ & exata\\
+Blocos contíguos & $O(n!\cdot n)$ ($n\le10$) & $O(n)$ & incorreto\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Força bruta.} Gera $(n-1)!$ permutações; cada uma consulta até $n$ arcos e copia $n$ posições. O melhor caso termina na primeira permutação; o pior caso é $\Theta(n\cdot(n-1)!)$, e é o caso dos digrafos sem ciclo. Espaço $O(n)$, pois \texttt{next\_permutation} gera no lugar.
+
+\paragraph{Backtracking.} A árvore tem profundidade $n$ e grau no máximo $n-1$, portanto $O(n!)$ nós no pior caso. Com a poda de vértice já usado, o número de nós em um digrafo completo sobre $m$ vértices é $\sum_{k}m!/(m-k)!\approx e\cdot m!$. Para o espaço, a pilha de recursão e o vetor de usados são $O(n)$.
+
+\paragraph{Held-Karp.} São $2^n$ máscaras, para cada uma até $n$ vértices finais e para cada vértice até $n$ vizinhos de saída: $\Theta(n^2\,2^n)$. O tempo depende de $n$ e não do número de arcos, exceto pelas podas por máscara inalcançável. O espaço é dominado pela tabela de predecessores, com $n\,2^n$ inteiros de 4 bytes, mais $2^n$ palavras de 32 bits do conjunto de finais. Para $n=22$ são $22\cdot2^{22}\cdot4\approx 369$~MB mais $16$~MB, aproximadamente $385$~MB. Por isso a memória limita o $n$ \emph{antes} do tempo, e o código recusa $n>22$.
+
+\paragraph{Guloso.} Cada passo percorre os vizinhos de saída ($O(n)$) e ordena os candidatos ($O(n\log n)$); são $n-1$ passos, daí $O(n^2\log n)$. No critério de Warnsdorff, cada candidato conta suas próprias saídas livres ($O(n)$), o que leva a $O(n^3)$. (Trocar a ordenação por uma busca do mínimo reduziria para $O(n^2)$ e $O(n^3)$ sem mudar a resposta; não foi feito porque o objetivo do trabalho é a comparação.)
+
+\paragraph{Recozimento.} O cálculo da variação é $O(1)$ (seis consultas de arco), mas aplicar a relocação aceita desloca até $n$ posições, então um movimento custa $O(n)$ quando aceito. Com $r$ recomeços de $c\,n$ movimentos, o tempo é $O(r\,c\,n^2)$, proporcional ao orçamento declarado. Espaço $O(n)$.
+
+\paragraph{Camion.} O caminho por inserção custa $O(n^2)$ (cada vértice varre o caminho). Cada rodada de inserção percorre os vértices de fora e o ciclo, $O(n^2)$, e pode haver até $n$ rodadas, portanto $O(n^3)$ no pior caso. Para $n\le 30$ no experimento o tempo é irrelevante frente aos métodos exponenciais.
+
+\subsection{O que o contador mede}
+
+A contagem de instruções usa as três grandezas do \texttt{Contador}. A \emph{unidade comum} de comparação entre estratégias é o tempo de parede. Cada algoritmo conta ``nós'' de uma natureza distinta, e por isso o texto não soma contagens de algoritmos diferentes num ``total de instruções'' único.
+
+\begin{center}
+\small
+\begin{tabular}{lp{9cm}}
+\toprule
+Algoritmo & O que é um ``nó''\\
+\midrule
+Força bruta & uma permutação testada (valor medido: exatamente $(n-1)!$ no pior caso)\\
+Backtracking & uma chamada recursiva da busca\\
+Held-Karp & um estado (máscara, vértice final) expandido\\
+Guloso & uma escolha de vizinho\\
+Recozimento & um movimento de relocação proposto\\
+Camion & uma inserção\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Análise de resultados}
+
+\subsection{Método}
+
+\paragraph{Digrafos de teste.} Semente base $20261107$. Seis tipos de digrafos, cada um com gerador próprio:
+\begin{itemize}
+  \item \textbf{Ciclo + arcos extras}: um ciclo plantado mais $n$ arcos aleatórios (resposta sim).
+  \item \textbf{DAG aleatório}: arcos só para a frente, $p=0{,}5$ (resposta não; não é fortemente conexo).
+  \item \textbf{Erdős--Rényi direcionado}, com $p=0{,}35$ fixo e com $p=(\ln n)/n$, a ordem do limiar de aparecimento de grau mínimo de entrada e saída $1$ \cite{frieze1988}. Uma amostra finita não é tratada como demonstração do teorema.
+  \item \textbf{Torneio aleatório}: sim quando é forte.
+  \item \textbf{Pior caso (sem ciclo)}: um digrafo completo sobre $n-1$ vértices mais um vértice $x$ ligado apenas ao vértice $1$ (arcos $1\to x$ e $x\to1$). O digrafo é fortemente conexo, não tem ciclo hamiltoniano (passar por $x$ exige usar $1$ duas vezes) e obriga os métodos exatos a esgotar a busca.
+\end{itemize}
+
+\paragraph{Juiz.} Até $n=14$ o Held-Karp julga os demais; até $n=11$ a força bruta concorda com ele (nos $288$ digrafos em que mais de um método exato rodou, as respostas coincidiram). Todo ciclo devolvido passa por \texttt{verifica\_ciclo}. Acima do alcance da PD, ``ciclo válido encontrado'' ou ``orçamento esgotado''; a palavra ``inexistente'' fica reservada aos métodos exatos.
+
+\paragraph{Execução.} AMD Ryzen 7 5700G, 31~GiB de memória, g++ 16.2 com \texttt{-O2}, um núcleo. Foram \totalmedicoes{} medições, com $8$ digrafos por tamanho e tipo. Timeout de $30$~s por chamada exata: \totalcensurados{} medições foram censuradas. Tamanhos: força bruta e backtracking $n=6$ a $11$; Held-Karp $n=6$ a $14$; guloso, recozimento e Camion até $n=30$. Os números de nós são reproduzíveis com os programas do trabalho, pois a semente é fixa; os tempos variam um pouco de uma execução para outra.
+
+\paragraph{Cuidado com a resolução do relógio.} Tempos abaixo de aproximadamente $0{,}005$~ms são ruído de medição (resolução de $0{,}001$~ms nos dados) e não são interpretados. A discussão se apoia em tempos acima de $0{,}01$~ms e nas contagens de nós, que não têm ruído.
+
+\subsection{Os três exatos no pior caso}
+
+\begin{center}
+\tabelapiorcaso
+\end{center}
+
+A Figura~\ref{fig:tempo} e a Figura~\ref{fig:nos} mostram os mesmos dados em escala logarítmica.
+
+\begin{figure}[h]
+\centering
+\graficotempo
+\caption{Tempo mediano contra $n$ no tipo pior caso (escala logarítmica).}
+\label{fig:tempo}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\graficonos
+\caption{Mediana de nós contra $n$ no tipo pior caso (escala logarítmica).}
+\label{fig:nos}
+\end{figure}
+
+\paragraph{Força bruta.} Os nós medidos são exatamente $(n-1)!$: $120$ em $n=6$ e $3\,628\,800$ em $n=11$, igual à teoria. O tempo cresce por um fator de cerca de $9{,}6$ entre $n=10$ e $n=11$ ($6{,}03\to57{,}6$~ms), compatível com o fator $n-1=10$.
+
+\paragraph{Backtracking.} A poda de vértice usado reduz os nós a cerca de $30\%$ da força bruta em $n=11$ ($1\,096\,011$ contra $3\,628\,800$), valor próximo de $e\cdot9!\approx 986\,000$ da fórmula da seção anterior. O ganho é de uma constante, não da ordem: a razão entre nós consecutivos continua a crescer com $n$. Neste tipo as duas ordens de vizinhos têm o mesmo número de nós (esperado: o grafo é completo sobre $n-1$ vértices e o digrafo não tem ciclo, logo a árvore é esgotada de qualquer modo); a ordem de Warnsdorff custa mais tempo pelo cálculo da chave ($43{,}6$ contra $38{,}0$~ms).
+
+\paragraph{Held-Karp.} Os nós crescem por um fator de aproximadamente $2{,}2$ por unidade de $n$ ($2561\to5633\to12289\to26625$), compatível com $\Theta(n^2\,2^n)$, e o tempo cresce por cerca de $2{,}5$ por unidade de $n$ ($0{,}150\to0{,}385\to0{,}955$~ms). Em $n=11$, Held-Karp leva $0{,}070$~ms contra $57{,}6$~ms da força bruta, uma razão de cerca de $800$ vezes, e a razão aumenta com $n$. O cruzamento entre o fatorial e $n^2\,2^n$ acontece já em $n\approx 7$, onde as duas curvas são indistinguíveis dentro do ruído; a partir daí a diferença é de ordem.
+
+\subsection{Efeito do filtro de conectividade forte}
+
+No tipo DAG a resposta é sempre não. Com o filtro, o backtracking responde sem expandir nenhum nó; sem o filtro, expande alguns:
+
+\begin{center}
+\tabelafiltro
+\end{center}
+
+O filtro corta a árvore inteira, mas é \emph{barato e correto}, e não resolve o caso forte: no tipo pior caso, que passa no filtro, a busca esgota $1{,}1$ milhão de nós em $n=11$.
+
+\subsection{Variação entre tipos}
+
+\begin{center}
+\tabelatipos
+\end{center}
+\noindent Tempos em milissegundos, $n=11$, oito digrafos por tipo.
+
+Nos tipos em que existe ciclo e há muitos arcos, o backtracking acha rapidamente (cauda curta). A força bruta tem cauda longa nos tipos com ciclo: em Erdős--Rényi com $p=0{,}35$ a mediana é de $3{,}1$~ms e o máximo, $36$~ms, pois a primeira permutação que fecha pode estar tarde na ordem lexicográfica. O Held-Karp é estável (o tempo muda pouco entre tipos do mesmo $n$ nos que existe ciclo), como esperado de uma complexidade que não depende da densidade. Mediana e máximo contam histórias diferentes, e os dois são publicados.
+
+\subsection{Guloso e recozimento: quem acha o ciclo?}
+
+\begin{center}
+\tabelaheuristicas
+\end{center}
+\noindent Digrafos em que o Held-Karp (juiz) confirma ciclo, $n=6$ a $14$. A segunda coluna é o total de digrafos com ciclo; as heurísticas rodam só em parte dos tamanhos, então cada célula é encontrados / digrafos com ciclo \emph{em que a heurística rodou}.
+
+\begin{itemize}
+  \item \textbf{O guloso por índice acerta 48 de 48 no tipo ciclo + arcos extras por um efeito do gerador}: o ciclo plantado é $0\to1\to2\to\cdots$, que é exatamente a ordem de índice. Isso mede o viés do tipo, e não a qualidade do critério; nos demais tipos (Erdős--Rényi, torneio) o mesmo critério encontra $1/27$ e $6/42$.
+  \item \textbf{A regra de Warnsdorff} é pior que o índice nesses digrafos ($10/48$, $0/27$, $3/42$). O contraexemplo da Seção~\ref{sec:guloso} mostra que é falha de projeto, e não azar.
+  \item \textbf{O recozimento} encontra $47/48$, $27/27$, $3/3$ e $42/42$ dos ciclos, recuperando a maior parte das falhas dos gulosos, no mesmo orçamento fixo. Mas continua sem como provar que o ciclo não existe: nos digrafos sem ciclo (DAG, pior caso) ele sempre termina por \texttt{Orcamento}, e isso não prova nada.
+  \item O tipo de limiar $p=(\ln n)/n$ tem só $3$ digrafos com ciclo no total. A amostra é pequena e não sustenta conclusão estatística sobre o limiar.
+\end{itemize}
+
+\subsection{Camion em torneios}
+
+Em torneios fortes, o algoritmo de Camion devolve o ciclo em tempo desprezível ($0{,}003$~ms em $n=30$, $29$ nós, um por vértice) enquanto o Held-Karp em $n=14$ já gasta cerca de $0{,}9$~ms e $34\,827$ nós. O mesmo problema, restrito a torneios, é polinomial; isso é o que a seção de aplicações chamou de fronteira da dificuldade.
+
+\section{Conclusão}
+
+O trabalho implementa, com contagem de instruções e medição de tempo, cinco das seis estratégias pedidas (força bruta, backtracking, programação dinâmica, guloso e recozimento como heurística) e justifica por escrito por que divisão e conquista não se sustenta no caso geral. O resultado experimental principal é a separação por ordem de grandeza: força bruta cresce com $(n-1)!$ nós medidos, backtracking diminui a constante e continua fatorial, e Held-Karp cresce com $2^n$, com razão de cerca de $800$ vezes em $n=11$.
+
+\paragraph{Limites.} O teto prático do Held-Karp é a memória, não o tempo: a tabela de predecessores chega a cerca de $385$~MB em $n=22$. O guloso não tem garantia e erra nos contraexemplos da Seção~\ref{sec:guloso}. O recozimento recupera quase todos os ciclos nos testes, mas nunca prova inexistência, e por isso nunca decreta ``não existe'': ele separa ``ciclo válido'' de ``orçamento esgotado''. Os tempos abaixo de $0{,}005$~ms foram descartados por resolução do relógio, e o tipo de limiar teve poucos digrafos com ciclo.
+
+\paragraph{Dificuldades.} (i) A reconstrução do ciclo no Held-Karp exige guardar o predecessor de cada estado, o que multiplica a memória por $n$. (ii) A tentação de apresentar o particionamento em blocos como divisão e conquista; o contraexemplo mostrou o falso negativo, e o trabalho o expõe em vez de o esconder. (iii) O tipo aleatório ingênuo dá digrafos ou triviais (DAG) ou fáceis (arcos extras), e a comparação entre os exatos só ficou informativa com o tipo pior caso. (iv) Distinguir, em todos os métodos, ``não encontrou'' de ``não existe'', para não afirmar o que a heurística não prova.
+
+\begin{thebibliography}{99}
+\bibitem{adleman1994} L. M. Adleman. Molecular computation of solutions to combinatorial problems. \emph{Science}, 266(5187):1021--1024, 1994.
+\bibitem{bellman1962} R. Bellman. Dynamic programming treatment of the travelling salesman problem. \emph{Journal of the ACM}, 9(1):61--63, 1962.
+\bibitem{bjorklund2010} A. Björklund. Determinant sums for undirected Hamiltonicity. In \emph{Proc. 51st IEEE FOCS}, 2010.
+\bibitem{camion1959} P. Camion. Chemins et circuits hamiltoniens des graphes complets. \emph{Comptes Rendus de l'Académie des Sciences}, 249:2151--2152, 1959.
+\bibitem{compeau2011} P. E. C. Compeau, P. A. Pevzner, G. Tesler. How to apply de Bruijn graphs to genome assembly. \emph{Nature Biotechnology}, 29:987--991, 2011.
+\bibitem{cormen2009} T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein. \emph{Introduction to Algorithms}. 3.\ ed., MIT Press/McGraw-Hill, 2009.
+\bibitem{frieze1988} A. M. Frieze. An algorithm for finding Hamilton cycles in random directed graphs. \emph{Journal of Algorithms}, 9(2):181--204, 1988.
+\bibitem{garey1979} M. R. Garey, D. S. Johnson. \emph{Computers and Intractability: A Guide to the Theory of NP-Completeness}. W. H. Freeman, 1979.
+\bibitem{held1962} M. Held, R. M. Karp. A dynamic programming approach to sequencing problems. \emph{Journal of the SIAM}, 10(1):196--210, 1962.
+\bibitem{karp1972} R. M. Karp. Reducibility among combinatorial problems. In \emph{Complexity of Computer Computations}, Plenum, 1972, pp.\ 85--103.
+\bibitem{kirkpatrick1983} S. Kirkpatrick, C. D. Gelatt, M. P. Vecchi. Optimization by simulated annealing. \emph{Science}, 220(4598):671--680, 1983.
+\bibitem{ziviani2006} N. Ziviani. \emph{Projeto de Algoritmos com implementações em Java e C++}. Cengage Learning (Thomson/Pioneira), São Paulo, 1.\ ed., 2006.
+\end{thebibliography}
+
+\end{document}
