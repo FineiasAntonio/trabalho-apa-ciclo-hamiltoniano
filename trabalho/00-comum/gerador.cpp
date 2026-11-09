@@ -57,9 +57,9 @@ Digrafo armadilha_warnsdorff() {
   return g;
 }
 
-Digrafo aleatorio(int n, unsigned semente) {
+Digrafo aleatorio(int n, unsigned semente, double densidade) {
   std::mt19937 rng(semente);
-  std::bernoulli_distribution moeda(0.35);
+  std::bernoulli_distribution moeda(densidade);
   Digrafo g(n);
   for (int u = 0; u < n; ++u) {
     for (int v = 0; v < n; ++v) {
@@ -101,7 +101,10 @@ std::optional<Digrafo> gera(const std::string& tipo, int n, unsigned semente) {
     return armadilha_warnsdorff();
   }
   if (tipo == "aleatorio") {
-    return aleatorio(n, semente);
+    return aleatorio(n, semente, 0.35);
+  }
+  if (tipo.rfind("aleatorio:", 0) == 0) {
+    return aleatorio(n, semente, std::stod(tipo.substr(10)));
   }
   return std::nullopt;
 }

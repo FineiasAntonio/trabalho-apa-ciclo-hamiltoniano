@@ -409,17 +409,17 @@ A força bruta, o backtracking e o Held-Karp têm resposta sempre certa. O gulos
 
 \subsection{Como os testes foram feitos}
 
-Os programas foram compilados com o g++ na opção \texttt{-O2}. Cada programa mede o tempo só do algoritmo e conta os passos, como descrito na Seção~\ref{sec:estrutura}. Foram usados estes tipos de digrafo:
+Os programas foram compilados com \texttt{g++ -O2}.
 
 \begin{itemize}
-  \item \texttt{pior\_caso}: sem ciclo, e sempre o mesmo digrafo para um dado $n$. O tempo é a mediana de 5 execuções.
-  \item \texttt{aleatorio}: cada arco existe com probabilidade $0{,}35$. Cada digrafo é identificado por uma semente, então dois programas podem rodar no mesmo digrafo. O Held-Karp serve de juiz, porque sua resposta é sempre certa.
-  \item \texttt{ciclo\_simples} e as duas armadilhas do guloso.
+  \item \textbf{Passos e tempo.} Os passos são contados como na Seção~\ref{sec:estrutura}. O tempo é medido só para o algoritmo, e é a mediana de 5 execuções.
+  \item \textbf{Digrafos aleatórios.} Cada arco existe com chance $p$ (a densidade). Uma semente define o digrafo, então todos os métodos rodam nos mesmos digrafos.
+  \item \textbf{Quem diz se há ciclo.} O backtracking e o Held-Karp são exatos. Nos digrafos aleatórios testados eles deram sempre a mesma resposta, e ela serve de gabarito para o guloso e o recozimento.
 \end{itemize}
 
-\subsection{Os métodos exatos no pior caso}
+\subsection{O pior caso}
 
-O tipo \texttt{pior\_caso} não tem ciclo e obriga os métodos exatos a procurar em tudo. A tabela mostra o resultado, e a Figura~\ref{fig:tempo} e a Figura~\ref{fig:nos} mostram os mesmos dados em escala logarítmica.
+O tipo \texttt{pior\_caso} não tem ciclo e obriga os métodos exatos a olhar tudo. O guloso (critério por índice) e o recozimento rodam no mesmo digrafo, mas não decidem nada: o guloso trava e o recozimento gasta o orçamento inteiro ($10$ reinícios de $200\,n$ movimentos) e desiste. A Figura~\ref{fig:tempo} e a Figura~\ref{fig:nos} mostram os mesmos dados da tabela, em escala logarítmica.
 
 \begin{center}
 \small
@@ -440,81 +440,91 @@ O tipo \texttt{pior\_caso} não tem ciclo e obriga os métodos exatos a procurar
 \label{fig:nos}
 \end{figure}
 
-\paragraph{Força bruta.} Os passos medidos são exatamente $(n-1)!$: $120$ para $n=6$, $3{,}6$ milhões para $n=11$ e $39{,}9$ milhões para $n=12$. É o que a análise de complexidade previa. O tempo cresce cerca de $12$ vezes ao passar de $n=11$ para $n=12$ ($34{,}7$ ms para $403$ ms), parecido com o fator $n-1=11$.
+\paragraph{Força bruta.} Os passos são exatamente $(n-1)!$, como a análise previa: $3{,}6$ milhões em $n=11$ e $39{,}9$ milhões em $n=12$. O tempo cresce cerca de $12$ vezes a cada vértice: $34$ ms, $408$ ms e $5{,}2$ s em $n=11$, $12$ e $13$.
 
-\paragraph{Backtracking.} Faz cerca de um terço dos passos da força bruta: $1{,}1$ milhão contra $3{,}6$ milhões em $n=11$. Isso o torna mais rápido a partir de $n=8$, mas não muda como o tempo cresce. Ele continua multiplicando por cerca de $10$ a cada vértice a mais ($13{,}2$ ms em $n=11$, $132$ ms em $n=12$ e $1{,}5$ segundo em $n=13$). A economia de passos é uma constante, e o crescimento continua fatorial.
+\paragraph{Backtracking.} Faz de um quarto a um terço dos passos da força bruta ($1{,}1$ milhão contra $3{,}6$ milhões em $n=11$) e é mais rápido a partir de $n=8$. Mas o tempo continua multiplicando por mais de $10$ a cada vértice ($12$ ms, $132$ ms, $1{,}5$ s e $19$ s em $n=11$, $12$, $13$ e $14$). Ele economiza uma constante, e o crescimento continua fatorial.
 
-\paragraph{Held-Karp.} Os passos e o tempo crescem cerca de $2{,}2$ vezes a cada vértice a mais, como esperado de um custo da ordem de $2^n$: os passos vão de $5\,633$ para $12\,289$ e depois $26\,625$, e o tempo de $0{,}23$ ms para $0{,}50$ e $1{,}1$ ms. Ele chega a $n=20$ em $120$ ms. Em $n=11$ é cerca de $290$ vezes mais rápido que a força bruta ($0{,}12$ ms contra $34{,}7$ ms), e em $n=12$ passa de $1\,700$ vezes ($0{,}23$ ms contra $403$ ms). Para $n$ pequeno ($6$ e $7$) os três empatam, dentro do ruído, e a vantagem do Held-Karp aparece a partir de $n=8$.
+\paragraph{Held-Karp.} Os passos e o tempo crescem cerca de $2{,}2$ vezes por vértice, como esperado de um custo da ordem de $2^n$. Ele chega a $n=20$ em $110$ ms. Em $n=11$ é cerca de $400$ vezes mais rápido que a força bruta, e em $n=12$ cerca de $1\,900$ vezes. Até $n=7$ os três levam poucos microssegundos, e a diferença se perde no ruído do relógio.
 
-\subsection{Quando o digrafo tem ciclo}
+\paragraph{Guloso e recozimento.} O guloso gasta $n-1$ escolhas e leva menos de um milésimo de milissegundo. O recozimento gasta sempre o mesmo orçamento, $2\,000\,n$ movimentos, e leva de $0{,}6$ a $2{,}7$ ms. Os dois crescem devagar, e o custo do recozimento passa a ser menor que o do Held-Karp a partir de $n=16$. Mas aqui nenhum dos dois responde: o digrafo não tem ciclo, e eles só desistem.
 
-O \texttt{pior\_caso} é o pior cenário. O tipo \texttt{aleatorio} mostra o outro lado. Para cada $n$ foram gerados $30$ digrafos (sementes de $1$ a $30$), e o backtracking e o Held-Karp rodaram nos mesmos digrafos. A tabela mostra a mediana nos digrafos que têm ciclo.
-
-\begin{center}
-\small
-\tabelaaleatorio
-\end{center}
-
-Aqui a situação se inverte. O backtracking visita poucas centenas de nós, e esse número quase não cresce com $n$: $45$, $192$, $158$, $517$ e $348$. Como o digrafo tem muitos arcos, existem muitos ciclos, e a busca chega a um deles sem explorar quase nada. O Held-Karp, ao contrário, sempre preenche a tabela, e seus passos dobram a cada vértice: em $n=18$ ele expande $496\,932$ situações contra $348$ nós do backtracking, cerca de $1\,400$ vezes mais. O tempo acompanha: $27$ ms para o Held-Karp e menos de $0{,}02$ ms, abaixo do que se consegue medir, para o backtracking.
-
-Nos digrafos sem ciclo o resultado muda:
+\paragraph{Memória.} Medimos o pico de memória de cada programa no \texttt{pior\_caso}. Todos os métodos, menos o Held-Karp, ficam em cerca de $4$~MB, que é o custo do próprio programa, porque guardam só $O(n)$ dados. O Held-Karp guarda a tabela de $n\,2^n$ bytes e é o único que cresce:
 
 \begin{center}
 \small
-\tabelasemciclo
+\begin{tabular}{r r r}
+\toprule
+$n$ & Held-Karp (MB) & demais métodos (MB)\\
+\midrule
+10 & $4$ & $4$\\
+15 & $4$ & $4$\\
+20 & $24$ & $4$\\
+22 & $94$ & $4$\\
+25 & $823$ & $4$\\
+\bottomrule
+\end{tabular}
 \end{center}
 
-Para $n$ pequeno os dois são parecidos. Nos maiores há poucos digrafos sem ciclo (um em $n=16$ e um em $n=18$), então os números são só um indício, mas eles mostram o risco do backtracking: no digrafo de $n=18$ ele levou $365$ ms, contra $13$ ms do Held-Karp. Sem ciclo, o backtracking precisa esgotar a busca, e o tempo depende de quanto da árvore sobrevive até o fim. O Held-Karp tem custo previsível, que quase não depende do digrafo.
+Cada vértice a mais dobra a tabela. Em $n=30$ ela teria cerca de $32$~GB, e em $n=50$ cerca de $56$ petabytes. Por isso o Held-Karp é o método exato que para primeiro, e a memória, não o tempo, define até onde ele vai.
 
 \subsection{Guloso e recozimento}
 
-Esses dois métodos não garantem a resposta, então a pergunta é quantos ciclos eles acham. Para os digrafos \texttt{aleatorio} que têm ciclo (segundo o Held-Karp), a tabela mostra em quantos cada método achou o ciclo. Foram usados $200$ digrafos para $n=10$ e $n=14$, e $100$ para $n=18$.
+O guloso e o recozimento não garantem a resposta, então a pergunta é quantos ciclos eles acham. Usamos digrafos aleatórios em que cada arco existe com chance $p$, e a tabela conta só os que têm ciclo (segundo os métodos exatos). O recozimento rodou $5$ vezes por digrafo, com sementes diferentes.
 
 \begin{center}
 \small
 \tabelaheuristicas
 \end{center}
 
-O guloso acha poucos: no máximo $11$ de $110$ digrafos com ciclo. O recozimento achou todos, exceto um em $n=14$, e esse mesmo digrafo foi resolvido ao repetir o recozimento com outra semente. Quando o recozimento diz que não achou, o Held-Karp confirmou que não há ciclo em quase todos os casos, mas isso é uma tendência e não uma garantia.
+\begin{itemize}
+  \item \textbf{O guloso acha pouco.} Em $n=14$ e $p=0{,}35$ ele acha $11$ de $365$ ciclos, e a regra de Warnsdorff acha $27$. Em $n=20$ são $7$ e $19$ de $198$. Warnsdorff é melhor quase sempre, mas os dois erram a maioria.
+  \item \textbf{O recozimento acha quase tudo.} Em todas as linhas ele acha o ciclo em $96\%$ ou mais das execuções, e em todos os digrafos em pelo menos uma das $5$ execuções.
+\end{itemize}
 
-Em $n=50$ o Held-Karp não roda, porque a tabela teria cerca de $56$ petabytes. Sem juiz, nos $100$ digrafos testados o recozimento achou o ciclo em todos ($100$ de $100$), e cada ciclo achado prova que ele existe. O guloso achou em $4$ ($14$ com a regra de Warnsdorff).
+Agora um teste em digrafos grandes demais para o Held-Karp, que não roda por falta de memória. Aqui não há gabarito: o que um método acha prova que o ciclo existe. Foram $200$ digrafos por linha com $p=0{,}35$, e o recozimento rodou uma vez em cada.
 
-\paragraph{Onde o recozimento sofre.} No tipo \texttt{ciclo\_simples} o único ciclo possível é $0\to1\to\cdots\to(n-1)\to0$. O guloso acha na hora, porque cada vértice tem uma só saída e não há o que escolher. O recozimento vai mal:
+\begin{center}
+\small
+\tabelagrandes
+\end{center}
+
+O recozimento acha o ciclo em todos os digrafos, até $n=100$, e o guloso acha de $3\%$ a $20\%$.
+
+\paragraph{O pior caso do recozimento.} No tipo \texttt{ciclo\_simples} o único ciclo possível é $0\to1\to\cdots\to(n-1)\to0$. O guloso acha na hora, porque cada vértice tem uma só saída. O recozimento, não (cada linha é a porcentagem de $100$ execuções que acharam o ciclo):
 
 \begin{center}
 \small
 \tabelaciclosimples
 \end{center}
 
-Como só uma ordem entre $(n-1)!$ é o ciclo, a nota quase não ajuda: uma ordem com quase todos os arcos certos não parece melhor do que uma ordem sem sentido. Por isso a busca anda às cegas, e a chance de achar cai com $n$.
+Como só uma ordem entre $(n-1)!$ é a resposta, a nota quase não ajuda: uma ordem com quase todos os arcos certos não está mais perto do ciclo do que uma ordem qualquer. A busca anda às cegas, e a chance de acerto cai de $100\%$ em $n=20$ para $0\%$ em $n=50$.
 
-\paragraph{As armadilhas.} Nos dois digrafos \texttt{armadilha\_indice} e \texttt{armadilha\_warnsdorff}, cada critério do guloso falha numa delas, mesmo havendo ciclo. O backtracking, o Held-Karp, a força bruta e o recozimento acharam o ciclo nas duas.
+\paragraph{As armadilhas.} Nos dois digrafos \texttt{armadilha\_indice} e \texttt{armadilha\_warnsdorff}, o guloso do critério de cada um falha, mesmo havendo ciclo. O backtracking, o Held-Karp, a força bruta e o recozimento acharam o ciclo nos dois.
 
 \subsection{Qual usar em cada caso}
 
 \begin{itemize}
-  \item \textbf{Força bruta:} só para $n$ muito pequeno (até cerca de $9$), ou como referência simples para conferir os outros.
-  \item \textbf{Backtracking:} quando o digrafo tem muitos arcos e é provável que exista ciclo. Acha em poucos passos, mas pode demorar muito se não houver ciclo.
-  \item \textbf{Held-Karp:} quando se precisa de uma resposta certa com tempo previsível, inclusive para dizer que não há ciclo. O limite é a memória, que dobra a cada vértice.
-  \item \textbf{Guloso:} quando cada vértice tem poucas saídas e há pouca escolha. É o mais rápido, mas erra com facilidade.
-  \item \textbf{Recozimento:} quando $n$ é grande demais para os exatos e o digrafo tem muitas saídas. Achou quase tudo nos testes, mas vai mal quando só existe um ciclo possível e nunca prova que o ciclo não existe.
+  \item \textbf{Força bruta:} só para $n$ muito pequeno (até cerca de $10$) ou para conferir os outros.
+  \item \textbf{Backtracking:} quando é provável que exista ciclo, porque ele para no primeiro que achar. Se não houver ciclo, o custo é o do pior caso, ainda fatorial.
+  \item \textbf{Held-Karp:} quando se precisa de resposta certa, inclusive o ``não existe'', com custo previsível. O limite é a memória: $90$~MB em $n=22$ e cerca de $32$~GB em $n=30$.
+  \item \textbf{Guloso:} quando se aceita errar muito em troca de custo mínimo. Nos testes achou menos de $25\%$ dos ciclos.
+  \item \textbf{Recozimento:} quando $n$ é grande demais para os exatos e o digrafo tem muitos arcos. Falha quando o ciclo é único, e nunca prova que o ciclo não existe.
 \end{itemize}
 
 Os métodos exatos garantem a resposta, tanto o ``sim'' quanto o ``não''. O guloso e o recozimento garantem só o ``sim'': se acharem um ciclo, ele está certo.
 
 \section{Conclusão}
 
-O trabalho implementa, com contagem de instruções e medição de tempo, cinco das seis estratégias pedidas (força bruta, backtracking, programação dinâmica, guloso e recozimento como heurística) e justifica por escrito por que divisão e conquista não se sustenta no caso geral. O resultado experimental principal é a separação por ordem de grandeza: força bruta cresce com $(n-1)!$ nós medidos, backtracking diminui a constante e continua fatorial, e Held-Karp cresce com $2^n$, com razão de cerca de $800$ vezes em $n=11$.
+O trabalho implementa, com contagem de instruções e medição de tempo, cinco das seis estratégias pedidas (força bruta, backtracking, programação dinâmica, guloso e recozimento como heurística) e justifica por escrito por que divisão e conquista não se sustenta no caso geral. O resultado experimental principal é a separação por ordem de grandeza: a força bruta cresce com $(n-1)!$ passos medidos, o backtracking diminui a constante e continua fatorial no pior caso, e o Held-Karp cresce com $2^n$ (cerca de $400$ vezes mais rápido que a força bruta em $n=11$).
 
-\paragraph{Limites.} O teto prático do Held-Karp é a memória, não o tempo: a tabela de predecessores chega a cerca de $385$~MB em $n=22$. O guloso não tem garantia e erra nos contraexemplos da Seção~\ref{sec:guloso}. O recozimento recupera quase todos os ciclos nos testes, mas nunca prova inexistência, e por isso nunca decreta ``não existe'': ele separa ``ciclo válido'' de ``orçamento esgotado''. Os tempos abaixo de $0{,}005$~ms foram descartados por resolução do relógio, e o tipo de limiar teve poucos digrafos com ciclo.
+\paragraph{Limites.} O teto prático do Held-Karp é a memória, não o tempo: a tabela, com um byte por situação, tem cerca de $90$~MB em $n=22$ e passaria de $30$~GB em $n=30$. O guloso não tem garantia e erra nos contraexemplos da Seção~\ref{sec:guloso}. O recozimento acha quase todos os ciclos em digrafos aleatórios densos, mas falha quando o ciclo é único (\texttt{ciclo\_simples}) e nunca prova que o ciclo não existe. Os tempos de poucos microssegundos têm pouca precisão.
 
-\paragraph{Dificuldades.} (i) A reconstrução do ciclo no Held-Karp exige guardar o predecessor de cada estado, o que multiplica a memória por $n$. (ii) A tentação de apresentar o particionamento em blocos como divisão e conquista; o contraexemplo mostrou o falso negativo, e o trabalho o expõe em vez de o esconder. (iii) O tipo aleatório ingênuo dá digrafos ou triviais (DAG) ou fáceis (arcos extras), e a comparação entre os exatos só ficou informativa com o tipo pior caso. (iv) Distinguir, em todos os métodos, ``não encontrou'' de ``não existe'', para não afirmar o que a heurística não prova.
+\paragraph{Dificuldades.} (i) A tabela do Held-Karp tem uma entrada para cada par (conjunto, vértice), então a memória é $n\,2^n$ e define o limite do método. (ii) A tentação de apresentar o particionamento em blocos como divisão e conquista; o contraexemplo mostrou o falso negativo, e o trabalho o expõe em vez de o esconder. (iii) Escolher os digrafos de teste: o \texttt{pior\_caso} mostra o custo dos métodos exatos, e o \texttt{aleatorio} e o \texttt{ciclo\_simples} mostram onde as heurísticas acertam e erram. (iv) Distinguir, em todos os métodos, ``não encontrou'' de ``não existe'', para não afirmar o que a heurística não prova.
 
 \begin{thebibliography}{99}
 \bibitem{bellman1962} R. Bellman. Dynamic programming treatment of the travelling salesman problem. Journal of the ACM, 9(1):61--63, 1962.
 \bibitem{bjorklund2010} A. Björklund. Determinant sums for undirected Hamiltonicity. In Proc. 51st IEEE FOCS, 2010.
 \bibitem{cormen2009} T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein. Introduction to Algorithms. 3.\ ed., MIT Press/McGraw-Hill, 2009.
-\bibitem{frieze1988} A. M. Frieze. An algorithm for finding Hamilton cycles in random directed graphs. Journal of Algorithms, 9(2):181--204, 1988.
 \bibitem{garey1979} M. R. Garey, D. S. Johnson. Computers and Intractability: A Guide to the Theory of NP-Completeness. W. H. Freeman, 1979.
 \bibitem{held1962} M. Held, R. M. Karp. A dynamic programming approach to sequencing problems. Journal of the SIAM, 10(1):196--210, 1962.
 \bibitem{karp1972} R. M. Karp. Reducibility among combinatorial problems. In Complexity of Computer Computations, Plenum, 1972, pp.\ 85--103.
