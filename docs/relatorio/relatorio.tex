@@ -97,43 +97,37 @@ Seja $G=(V,A)$ um grafo direcionado simples, sem laços, com $n=|V|\ge 2$ vérti
   \item $(v_n,v_1)\in A$.
 \end{itemize}
 
-O problema de decisão (CHD) pergunta: dado $G$, existe um ciclo hamiltoniano direcionado? O código deste trabalho resolve a versão de busca: devolve a sequência quando ela existe. A resposta de decisão é o sim ou o não dessa busca, e a própria sequência é a prova de que a resposta é sim, usada na Seção~\ref{sec:prova}.
+O problema de decisão pergunta: dado $G$, existe um ciclo hamiltoniano direcionado? O código deste trabalho resolve a versão de busca: devolve a sequência quando ela existe. A resposta de decisão é o sim ou o não dessa busca, e a própria sequência é a prova de que a resposta é sim, usada na Seção~\ref{sec:prova}.
 
 \paragraph{Convenção de simetria.} Rotacionar um ciclo não cria outro ciclo. Por isso todos os métodos exatos fixam $v_1=0$. Inverter o sentido, ao contrário, produz outro ciclo direcionado e não é equivalente: o sentido oposto continua valendo e entra na busca.
 
-\subsection{Dois exemplos mínimos}
+\subsection{Exemplos}
 
 \paragraph{Exemplo com ciclo.} Arcos $(0,1),(1,2),(2,3),(3,0)$. O ciclo é $0\to1\to2\to3\to0$, em verde na figura.
 
 \figura{ex_sim}{0.42\linewidth}{Digrafo com ciclo hamiltoniano direcionado.}
 
-\paragraph{Exemplo sem ciclo, com o digrafo forte.} Arcos $(0,1),(1,2),(2,0),(1,3),(3,0)$. De $3$ só se sai para $0$, e em $3$ só se entra por $1$, então $3$ teria de ocupar o trecho $1\to3\to0$. O vértice $2$ não cabe nesse trecho com os arcos existentes. O digrafo é fortemente conexo: conectividade forte é condição necessária e não suficiente.
+\paragraph{Exemplo sem ciclo, com o digrafo forte.} Arcos $(0,1),(1,2),(2,0),(1,3),(3,0)$. De $3$ só se sai para $0$, e em $3$ só se entra por $1$, então $3$ teria de ocupar o trecho $1\to3\to0$. O vértice $2$ não cabe nesse trecho com os arcos existentes.
 
 \figura{ex_nao}{0.5\linewidth}{Digrafo fortemente conexo sem ciclo hamiltoniano.}
-
-Os dois exemplos podem ser executados por qualquer programa do trabalho, com os tipos \texttt{ciclo\_simples} e \texttt{forte\_sem\_ciclo}.
 
 \subsection{Aplicações práticas}
 \label{sec:aplicacoes}
 
-Em cada aplicação abaixo, o que é vértice, o que é arco e por que a volta ao início importa. A dificuldade é a mesma nos quatro casos: o ciclo hamiltoniano é NP-completo, e a solução exata só funciona para digrafos pequenos.
+\paragraph{Roteirização urbana.} Aplicativos de entrega e frotas de caminhões usam o conceito para planejar rotas em cidades cheias de ruas de mão única, viadutos e conversões proibidas. Cada cliente é um vértice e cada trecho permitido de um ponto a outro é um arco, de modo que o digrafo é naturalmente direcionado. O objetivo é visitar todos os clientes sem repetir trajetos e voltar ao depósito, que é a volta ao início do ciclo.
 
-\paragraph{Entregas urbanas (Correios, iFood, Amazon).} Cada endereço de entrega é um vértice, e um arco é o trecho de rua que leva de um endereço a outro. Como há ruas de mão única, ir de $A$ a $B$ não equivale a ir de $B$ a $A$, e o digrafo é naturalmente direcionado. O entregador parte do depósito, visita cada endereço uma vez e volta ao depósito: a volta ao início é o retorno da van ou da moto à base. As empresas resolvem a versão com custos (caixeiro viajante assimétrico e roteirização de veículos), e o CHD é a pergunta de viabilidade dentro dela: o caso em que todo arco existente custa $1$ e o limite é $B=n$. Com centenas de paradas por dia, a solução exata é inviável (Seção~\ref{sec:complexidade}) e as empresas usam heurísticas, como o recozimento deste trabalho. O texto não atribui a elas razão de aproximação provada.
+\paragraph{Perfuração de placas de circuito (PCBs).} Máquinas automatizadas precisam furar milhares de pontos em uma placa eletrônica. Cada furo é um vértice e cada deslocamento possível da broca é um arco. Encontrar o ciclo hamiltoniano de menor caminho faz a broca passar por todos os furos uma única vez, reduzindo drasticamente o tempo de produção.
 
-\paragraph{Computação com DNA (Adleman, 1994).} A primeira demonstração de computação com moléculas de DNA resolveu um problema de caminho hamiltoniano num digrafo de $7$ vértices \cite{adleman1994}. Cada cidade foi codificada por uma sequência de DNA e cada arco por uma sequência que liga o fim de uma cidade ao início da seguinte. Misturadas num tubo de ensaio, as moléculas formaram, em paralelo, todos os caminhos possíveis, e as etapas seguintes eliminaram os que não passavam por todas as cidades exatamente uma vez. O experimento é famoso por mostrar a ideia, e também por mostrar o limite: o número de moléculas necessárias cresce com o número de caminhos, isto é, de forma exponencial, e a abordagem não escala.
+\paragraph{Montagem de genomas (sequenciamento de DNA).} Ao ler o DNA, os equipamentos quebram a fita genética em milhões de pequenos fragmentos (\emph{reads}). Os algoritmos montam um digrafo em que os vértices são esses fragmentos e os arcos indicam sobreposições válidas. Encontrar um caminho ou ciclo hamiltoniano permite reconstruir a sequência original completa do DNA.
 
-\paragraph{Montagem de genomas (Projeto Genoma Humano e bactérias).} Para sequenciar um genoma, a máquina lê milhões de fragmentos curtos. Na formulação clássica, cada fragmento é um vértice, e um arco liga dois fragmentos quando o final de um se sobrepõe ao começo do outro. Uma sequência que usa cada fragmento uma vez é um caminho hamiltoniano; no genoma circular de uma bactéria ou de um plasmídeo é um ciclo hamiltoniano, e a volta ao início é a própria circularidade do DNA. Como o problema é NP-completo, os montadores modernos mudaram de modelo: usam o grafo de de Bruijn e o caminho euleriano, que é polinomial \cite{compeau2011}. O problema deste trabalho explica uma mudança real de abordagem numa área muito conhecida.
-
-\paragraph{Campeonato por pontos corridos (Brasileirão, xadrez).} Num campeonato em que todos jogam contra todos, os competidores são vértices e uma vitória é um arco do vencedor para o perdedor. Todo par tem exatamente um sentido (sem empate, ou desconsiderando-o), então o digrafo é um torneio. Se ele é fortemente conexo, o teorema de Camion \cite{camion1959} garante um ciclo hamiltoniano: uma ordenação circular em que cada competidor venceu o seguinte, e o último venceu o primeiro. O ciclo explica por que o ``ganhou de'' não é transitivo (A vence B, B vence C, C vence A). Este é o caso em que a pergunta deixa de ser NP-completa: nesse caso o ciclo se acha em tempo polinomial, e isso mostra que a dificuldade mora na estrutura do digrafo e não no nome do problema.
-
-\section{Prova: CHD pertence à classe NP}
+\section{Classes do Ciclo Hamiltoniano Direcionado}
 \label{sec:prova}
 
 \subsection{CHD $\in$ NP}
 
 Um problema está em NP quando, se alguém propõe uma resposta ``sim'', dá para conferi-la rapidamente, em tempo polinomial \cite{cormen2009,ziviani2006}. Não é preciso saber achar a resposta, só conferir.
 
-No CHD, a resposta ``sim'' proposta é uma sequência de vértices, $c=(c_1,\dots,c_n)$. Para conferir se ela é um ciclo hamiltoniano direcionado (função \texttt{verifica\_ciclo}), basta checar três coisas:
+No CHD, a resposta ``sim'' proposta é uma sequência de vértices, $c=(c_1,\dots,c_n)$. Para conferir se ela é um ciclo hamiltoniano direcionado, basta checar três coisas:
 
 \begin{enumerate}
   \item A sequência tem exatamente $n$ vértices.
@@ -145,7 +139,7 @@ Ao todo são cerca de $n$ passos, um tempo polinomial. A conferência aceita se,
 
 \subsection{CHD é NP-completo (além do que o edital pede)}
 
-Um problema é NP-completo quando está em NP e é pelo menos tão difícil quanto os problemas mais difíceis de NP. Para mostrar isso, usa-se um problema que já se sabe ser difícil: o ciclo hamiltoniano em grafos sem direção, que é NP-completo \cite{karp1972,garey1979}.
+Um problema é NP-completo quando está em NP e é pelo menos tão difícil quanto os problemas mais difíceis de NP. Para mostrar isso, usa-se um problema que já se sabe ser difícil: o ciclo hamiltoniano em grafos sem direção, que é NP-completo.
 
 A ideia é transformar um problema no outro:
 
@@ -155,7 +149,7 @@ A ideia é transformar um problema no outro:
   \item Se o digrafo tem um ciclo hamiltoniano, o grafo também tem, pois cada arco usado veio de uma aresta.
 \end{enumerate}
 
-Logo, quem soubesse resolver o CHD saberia resolver o ciclo hamiltoniano sem direção, que é um problema difícil. Então o CHD também é difícil e, como já está em NP, é NP-completo (problema GT38 de \cite{garey1979}).
+Logo, quem soubesse resolver o CHD saberia resolver o ciclo hamiltoniano sem direção, que é um problema difícil. Então o CHD também é difícil e, como já está em NP, é NP-completo.
 
 \section{Implementação}
 
@@ -176,7 +170,7 @@ Cada estratégia é um programa independente, com a sua própria função \textt
 \end{itemize}
 Os números de algoritmos diferentes não são somados em um total único, porque um estado do Held-Karp e uma permutação da força bruta não são a mesma operação.
 
-\paragraph{O verificador.} A função \texttt{verifica\_ciclo} recebe um digrafo e uma sequência de vértices e responde se ela é um ciclo hamiltoniano direcionado: confere se tem $n$ vértices, se nenhum se repete e se cada vértice tem arco para o seguinte, inclusive do último para o primeiro. É o verificador da prova de NP da seção anterior. Todos os programas o usam para conferir o ciclo que o algoritmo devolveu, antes de mostrá-lo.
+\paragraph{O verificador.} A função \texttt{verifica\_ciclo} recebe um digrafo e uma sequência de vértices e responde se ela é um ciclo hamiltoniano direcionado: confere se tem $n$ vértices, se nenhum se repete e se cada vértice tem arco para o seguinte, inclusive do último para o primeiro. Todos os programas o usam para conferir o ciclo que o algoritmo devolveu, antes de mostrá-lo.
 
 \paragraph{O gerador de digrafos.} Cria os digrafos de teste a partir de um tipo e do tamanho $n$:
 \begin{center}
@@ -194,7 +188,7 @@ Tipo & O que gera\\
 \bottomrule
 \end{tabular}
 \end{center}
-O tipo \texttt{aleatorio} usa uma semente. Sem indicação, ela é sorteada a cada execução, e o programa imprime a semente usada. Com a opção \texttt{-{}-semente=N} o mesmo digrafo é gerado de novo, o que permite rodar dois algoritmos no mesmo digrafo e comparar as respostas.
+O tipo \texttt{aleatorio} usa uma semente. Sem indicação, ela é sorteada a cada execução, e o programa imprime a semente usada. Com o argumento \texttt{-{}-semente=N} o mesmo digrafo é gerado de novo, o que permite rodar dois algoritmos no mesmo digrafo e comparar as respostas.
 
 \paragraph{O programa de cada estratégia.} Todos funcionam do mesmo jeito: recebem o tipo e o tamanho $n$ pela linha de comando, geram o digrafo, rodam o algoritmo e imprimem o ciclo (ou a informação de que não foi encontrado), os contadores, o tempo e a semente do digrafo. O tempo é medido com \texttt{std::chrono::steady\_clock} e cobre só a execução do algoritmo, sem a geração do digrafo.
 
@@ -204,7 +198,8 @@ A força bruta testa todas as ordens possíveis de visitar os vértices. O vért
 
 Para cada ordem, o programa confere se existe arco de cada vértice para o próximo e do último de volta para o primeiro. Se falta algum arco, passa para a ordem seguinte. Se todos existem, achou o ciclo e para. Se as ordens acabam sem sucesso, o ciclo não existe.
 
-Ela não faz nenhuma economia: monta a ordem inteira antes de conferir. É isso que a diferencia do backtracking.
+\lstinputlisting[caption={forca\_bruta.hpp}]{../../trabalho/01-forca-bruta/forca_bruta.hpp}
+\lstinputlisting[caption={forca\_bruta.cpp}]{../../trabalho/01-forca-bruta/forca_bruta.cpp}
 
 \subsection{Backtracking}
 
@@ -213,6 +208,9 @@ O backtracking monta o caminho aos poucos, um vértice por vez, começando pelo 
 Se em algum ponto não dá para continuar, ele volta atrás: desfaz o último passo e tenta o próximo vértice possível. Isso descarta de uma só vez todas as ordens que começam com um arco que não existe, o que a força bruta testaria uma a uma. Os vértices são tentados em ordem crescente de número.
 
 No pior caso ele ainda testa um número fatorial de caminhos, mas costuma testar bem menos.
+
+\lstinputlisting[caption={backtracking.hpp}]{../../trabalho/02-backtracking/backtracking.hpp}
+\lstinputlisting[caption={backtracking.cpp}]{../../trabalho/02-backtracking/backtracking.cpp}
 
 \subsection{Divisão e conquista}
 \label{sec:dc}
@@ -245,6 +243,9 @@ Uma situação é descrita por dois dados: o conjunto dos vértices já visitado
 
 \paragraph{Exemplo.} No digrafo \texttt{forte\_sem\_ciclo}, a tabela chega aos conjuntos $\{0,1,2\}$ e $\{0,1,3\}$ e não passa deles, porque de $2$ não há arco para o $3$ e de $3$ não há arco para o $2$. O conjunto com todos os vértices nunca é alcançado, então a resposta é que não existe ciclo.
 
+\lstinputlisting[caption={held\_karp.hpp}]{../../trabalho/04-programacao-dinamica/held_karp.hpp}
+\lstinputlisting[caption={held\_karp.cpp}]{../../trabalho/04-programacao-dinamica/held_karp.cpp}
+
 \subsection{Guloso}
 \label{sec:guloso}
 
@@ -265,7 +266,8 @@ Nenhum dos dois tem garantia. Se o guloso acha um ciclo, ele está certo, mas se
 
 \figura{guloso_warns}{0.42\linewidth}{Armadilha do critério de Warnsdorff. Verde: ciclo existente. Vermelho: escolha do guloso. Tracejado: arco não usado.}
 
-Os dois são heurísticas, sem garantia e sem razão de aproximação.
+\lstinputlisting[caption={guloso.hpp}]{../../trabalho/05-guloso/guloso.hpp}
+\lstinputlisting[caption={guloso.cpp}]{../../trabalho/05-guloso/guloso.cpp}
 
 \subsection{Heurística: recozimento simulado}
 
@@ -286,10 +288,11 @@ Ele para quando a nota chega a $n$ (achou o ciclo) ou quando o limite de tentati
 
 Se o limite acaba sem achar, isso não prova que o ciclo não existe: pode ter faltado sorte ou tentativas.
 
+\lstinputlisting[caption={recozimento.hpp}]{../../trabalho/06-heuristica/recozimento.hpp}
+\lstinputlisting[caption={recozimento.cpp}]{../../trabalho/06-heuristica/recozimento.cpp}
+
 \section{Análise de complexidade}
 \label{sec:complexidade}
-
-Esta seção conta o trabalho de cada algoritmo em função do número de vértices $n$. O tempo é o número de passos, e consultar um arco custa um passo. O espaço é a memória usada além da tabela do digrafo, que ocupa $n^2$ posições e é igual para todos. Três símbolos são usados: $O(f)$ é um limite de cima, $\Omega(f)$ é um limite de baixo, e $\Theta(f)$ quer dizer as duas coisas, ou seja, a mesma ordem de grandeza de $f$. O pior caso recebe um $O$ e, quando existe um digrafo que o atinge, um $\Theta$. O melhor caso recebe um $\Omega$.
 
 \subsection{Verificador}
 
@@ -508,11 +511,8 @@ O trabalho implementa, com contagem de instruções e medição de tempo, cinco 
 \paragraph{Dificuldades.} (i) A reconstrução do ciclo no Held-Karp exige guardar o predecessor de cada estado, o que multiplica a memória por $n$. (ii) A tentação de apresentar o particionamento em blocos como divisão e conquista; o contraexemplo mostrou o falso negativo, e o trabalho o expõe em vez de o esconder. (iii) O tipo aleatório ingênuo dá digrafos ou triviais (DAG) ou fáceis (arcos extras), e a comparação entre os exatos só ficou informativa com o tipo pior caso. (iv) Distinguir, em todos os métodos, ``não encontrou'' de ``não existe'', para não afirmar o que a heurística não prova.
 
 \begin{thebibliography}{99}
-\bibitem{adleman1994} L. M. Adleman. Molecular computation of solutions to combinatorial problems. Science, 266(5187):1021--1024, 1994.
 \bibitem{bellman1962} R. Bellman. Dynamic programming treatment of the travelling salesman problem. Journal of the ACM, 9(1):61--63, 1962.
 \bibitem{bjorklund2010} A. Björklund. Determinant sums for undirected Hamiltonicity. In Proc. 51st IEEE FOCS, 2010.
-\bibitem{camion1959} P. Camion. Chemins et circuits hamiltoniens des graphes complets. Comptes Rendus de l'Académie des Sciences, 249:2151--2152, 1959.
-\bibitem{compeau2011} P. E. C. Compeau, P. A. Pevzner, G. Tesler. How to apply de Bruijn graphs to genome assembly. Nature Biotechnology, 29:987--991, 2011.
 \bibitem{cormen2009} T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein. Introduction to Algorithms. 3.\ ed., MIT Press/McGraw-Hill, 2009.
 \bibitem{frieze1988} A. M. Frieze. An algorithm for finding Hamilton cycles in random directed graphs. Journal of Algorithms, 9(2):181--204, 1988.
 \bibitem{garey1979} M. R. Garey, D. S. Johnson. Computers and Intractability: A Guide to the Theory of NP-Completeness. W. H. Freeman, 1979.
